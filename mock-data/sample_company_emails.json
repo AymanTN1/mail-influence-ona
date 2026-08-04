@@ -1,0 +1,58 @@
+[
+  {
+    "messageId": "msg-101",
+    "from": "alex.executive@corp.com",
+    "to": ["sarah.cto@corp.com", "david.engineering_lead@corp.com"],
+    "cc": ["claire.hr@corp.com"],
+    "timestamp": "2026-08-04T10:00:00Z"
+  },
+  {
+    "messageId": "msg-102",
+    "from": "david.engineering_lead@corp.com",
+    "to": ["sarah.cto@corp.com"],
+    "cc": ["bob.dev@corp.com", "alice.dev@corp.com"],
+    "timestamp": "2026-08-04T10:15:00Z"
+  },
+  {
+    "messageId": "msg-103",
+    "from": "sarah.cto@corp.com",
+    "to": ["david.engineering_lead@corp.com", "alex.executive@corp.com"],
+    "cc": [],
+    "timestamp": "2026-08-04T10:30:00Z"
+  },
+  {
+    "messageId": "msg-104",
+    "from": "bob.dev@corp.com",
+    "to": ["david.engineering_lead@corp.com"],
+    "cc": ["alice.dev@corp.com"],
+    "timestamp": "2026-08-04T11:00:00Z"
+  },
+  {
+    "messageId": "msg-105",
+    "from": "alice.dev@corp.com",
+    "to": ["bob.dev@corp.com"],
+    "cc": [],
+    "timestamp": "2026-08-04T11:20:00Z"
+  },
+  {
+    "messageId": "msg-106",
+    "from": "claire.hr@corp.com",
+    "to": ["david.engineering_lead@corp.com", "mark.sales_lead@corp.com"],
+    "cc": ["alex.executive@corp.com"],
+    "timestamp": "2026-08-04T14:00:00Z"
+  },
+  {
+    "messageId": "msg-107",
+    "from": "mark.sales_lead@corp.com",
+    "to": ["claire.hr@corp.com"],
+    "cc": ["emma.sales@corp.com"],
+    "timestamp": "2026-08-04T14:45:00Z"
+  },
+  {
+    "messageId": "msg-108",
+    "from": "emma.sales@corp.com",
+    "to": ["mark.sales_lead@corp.com"],
+    "cc": [],
+    "timestamp": "2026-08-04T15:10:00Z"
+  }
+]

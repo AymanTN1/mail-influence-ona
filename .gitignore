@@ -1,0 +1,20 @@
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Build & Dependencies
+target/
+build/
+node_modules/
+dist/
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Test Email Archives
+mock-data/private_emails/
