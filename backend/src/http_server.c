@@ -21,7 +21,7 @@ typedef int socklen_t;
 #endif
 
 static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* bench) {
-    int buf_size = 65536;
+    int buf_size = 131072;
     char* response_body = (char*)malloc(buf_size);
     char* full_response = (char*)malloc(buf_size + 1024);
     if (!response_body || !full_response) {
@@ -141,6 +141,41 @@ static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* benc
             (r < audit.num_recommendations - 1) ? "," : "");
     }
 
+    offset += snprintf(response_body + offset, buf_size - offset, "    ]\n  },\n");
+
+    CascadingFailureReport cfr = simulate_cascading_failure(g, NULL, 0);
+    offset += snprintf(response_body + offset, buf_size - offset, "  \"cascadingSimulation\": {\n");
+    offset += snprintf(response_body + offset, buf_size - offset,
+        "    \"numResigned\": %d,\n"
+        "    \"brokenEdgesCount\": %d,\n"
+        "    \"lostFlux\": %.2f,\n"
+        "    \"totalComponents\": %d,\n"
+        "    \"isolatedEmployeesCount\": %d,\n"
+        "    \"fragmentationIndex\": %.1f,\n"
+        "    \"riskLevel\": \"%s\",\n"
+        "    \"impactSummary\": \"%s\",\n"
+        "    \"resignedNodeIds\": [",
+        cfr.num_resigned, cfr.broken_edges_count, cfr.lost_flux, cfr.total_components,
+        cfr.isolated_employees_count, cfr.fragmentation_index, cfr.risk_level, cfr.impact_summary);
+
+    for (int r = 0; r < cfr.num_resigned; r++) {
+        offset += snprintf(response_body + offset, buf_size - offset, "%d%s",
+            cfr.resigned_node_ids[r], (r < cfr.num_resigned - 1) ? ", " : "");
+    }
+    offset += snprintf(response_body + offset, buf_size - offset, "],\n    \"components\": [\n");
+
+    for (int c = 0; c < cfr.total_components && c < MAX_DEPTS; c++) {
+        ConnectedComponent* comp = &cfr.components[c];
+        offset += snprintf(response_body + offset, buf_size - offset,
+            "      {\"sccId\": %d, \"memberCount\": %d, \"dominantDept\": \"%s\", \"isIsolated\": %s, \"memberIds\": [",
+            comp->scc_id, comp->member_count, comp->dominant_dept, comp->is_isolated ? "true" : "false");
+        for (int m = 0; m < comp->member_count; m++) {
+            offset += snprintf(response_body + offset, buf_size - offset, "%d%s",
+                comp->member_ids[m], (m < comp->member_count - 1) ? ", " : "");
+        }
+        offset += snprintf(response_body + offset, buf_size - offset, "]}%s\n",
+            (c < cfr.total_components - 1 && c < MAX_DEPTS - 1) ? "," : "");
+    }
     offset += snprintf(response_body + offset, buf_size - offset, "    ]\n  }\n}\n");
 
     int total_len = snprintf(full_response, buf_size + 1024,

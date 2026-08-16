@@ -80,6 +80,19 @@ int main(int argc, char* argv[]) {
                cm->label, cm->member_count, cm->internal_flux, cm->cohesion_score);
     }
 
+    // 8. Crash Test : Simulation de Départs en Cascade (Algorithme de Tarjan SCC)
+    printf("\n🌪️ --- Crash Test : Départs en Cascade & Fragmentation (Tarjan SCC) ---\n");
+    CascadingFailureReport crash = simulate_cascading_failure(g, NULL, 0);
+    printf("  - Collaborateurs démissionnaires simulés: %d personnes [ ", crash.num_resigned);
+    for (int r = 0; r < crash.num_resigned; r++) {
+        printf("%s ", g->nodes[crash.resigned_node_ids[r]].name);
+    }
+    printf("]\n");
+    printf("  - Liaisons emails rompues: %d | Flux perdu: %.1f\n", crash.broken_edges_count, crash.lost_flux);
+    printf("  - Fragmentation Réseau: %.1f%% | Composantes SCC: %d | Niveau de Risque: %s\n",
+           crash.fragmentation_index, crash.total_components, crash.risk_level);
+    printf("  - Diagnostic: %s\n", crash.impact_summary);
+
     // 6. Rapport d'Audit Global de Santé Organisationnelle (Score 0-100)
     printf("\n======================================================================\n");
     printf(" 📑 RAPPORT D'AUDIT DE SANTÉ ORGANISATIONNELLE (ONA C ENGINE)\n");

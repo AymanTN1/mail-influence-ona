@@ -98,6 +98,29 @@ typedef struct {
     int node_community[MAX_MEMBERS]; // node_id -> community_id
 } CommunityReport;
 
+// Structure d'une Composante Connexe Issue de la Fragmentation (Tarjan SCC)
+typedef struct {
+    int scc_id;
+    int member_ids[MAX_MEMBERS];
+    int member_count;
+    char dominant_dept[MAX_STR];
+    bool is_isolated; // true si îlot isolé déconnecté du cœur de l'entreprise
+} ConnectedComponent;
+
+// Rapport du Simulateur de Crise & Départs en Cascade (Cascading Failure & Tarjan)
+typedef struct {
+    int resigned_node_ids[MAX_MEMBERS];
+    int num_resigned;
+    int broken_edges_count;
+    double lost_flux;
+    int total_components;
+    int isolated_employees_count;
+    double fragmentation_index; // 0.0% à 100.0%
+    ConnectedComponent components[MAX_DEPTS];
+    char risk_level[16]; // "FAIBLE", "MODÉRÉ", "CRITIQUE", "CATASTROPHIQUE"
+    char impact_summary[256];
+} CascadingFailureReport;
+
 // Calcul de la Centralité PageRank (Power Iteration)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor);
 
@@ -118,6 +141,9 @@ BoundarySpannerReport calculate_boundary_spanners(Graph* g);
 
 // Détection des Tribus & Communautés Informelles (Label Propagation Algorithm - LPA en C)
 CommunityReport calculate_graph_communities(Graph* g);
+
+// Simulateur de Crise & Départs en Cascade (Algorithme de Tarjan DFS avec Stack en C)
+CascadingFailureReport simulate_cascading_failure(Graph* g, const int* resigned_ids, int num_resigned);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);

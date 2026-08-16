@@ -767,3 +767,217 @@ CommunityReport calculate_graph_communities(Graph* g) {
 
     return report;
 }
+
+// Structure de contexte pour l'algorithme de Tarjan DFS avec Stack
+typedef struct {
+    int* disc;
+    int* low;
+    bool* on_stack;
+    const bool* is_removed;
+    Stack* stack;
+    int time_counter;
+    int scc_count;
+    int* scc_map;
+} TarjanContext;
+
+static void tarjan_dfs_matrix(int u, int N, const bool adj[MAX_MEMBERS][MAX_MEMBERS], TarjanContext* ctx) {
+    ctx->disc[u] = ctx->low[u] = ++ctx->time_counter;
+    push(ctx->stack, u);
+    ctx->on_stack[u] = true;
+
+    for (int v = 0; v < N; v++) {
+        if (!adj[u][v] || ctx->is_removed[v]) continue;
+
+        if (ctx->disc[v] == 0) {
+            tarjan_dfs_matrix(v, N, adj, ctx);
+            if (ctx->low[v] < ctx->low[u]) {
+                ctx->low[u] = ctx->low[v];
+            }
+        } else if (ctx->on_stack[v]) {
+            if (ctx->disc[v] < ctx->low[u]) {
+                ctx->low[u] = ctx->disc[v];
+            }
+        }
+    }
+
+    if (ctx->low[u] == ctx->disc[u]) {
+        int scc = ctx->scc_count++;
+        while (!is_stack_empty(ctx->stack)) {
+            int w = pop(ctx->stack);
+            ctx->on_stack[w] = false;
+            ctx->scc_map[w] = scc;
+            if (w == u) break;
+        }
+    }
+}
+
+// Simulateur de Crise & Départs en Cascade (Algorithme de Tarjan DFS avec Stack en C)
+CascadingFailureReport simulate_cascading_failure(Graph* g, const int* resigned_ids, int num_resigned) {
+    CascadingFailureReport report;
+    memset(&report, 0, sizeof(CascadingFailureReport));
+
+    if (!g || g->num_nodes == 0) return report;
+
+    int N = g->num_nodes;
+    int E = g->num_edges;
+
+    // 1. Définir les collaborateurs démissionnaires
+    bool* is_removed = (bool*)calloc(N, sizeof(bool));
+    if (resigned_ids && num_resigned > 0) {
+        for (int i = 0; i < num_resigned && i < MAX_MEMBERS; i++) {
+            int id = resigned_ids[i];
+            if (id >= 0 && id < N) {
+                is_removed[id] = true;
+                report.resigned_node_ids[report.num_resigned++] = id;
+            }
+        }
+    } else {
+        // Scénario par défaut : Démission simultanée des 2 plus grands points critiques (Bus Factor)
+        BusFactorReport bf = calculate_bus_factor_and_overload(g);
+        int max_auto_resign = (bf.count > 2) ? 2 : bf.count;
+        for (int i = 0; i < max_auto_resign; i++) {
+            int id = bf.members[i].node_id;
+            is_removed[id] = true;
+            report.resigned_node_ids[report.num_resigned++] = id;
+        }
+    }
+
+    // 2. Calcul des liaisons et du flux de communication perdus
+    for (int e = 0; e < E; e++) {
+        int src = g->edges[e].source;
+        int tgt = g->edges[e].target;
+        double w = g->edges[e].weight;
+
+        if (is_removed[src] || is_removed[tgt]) {
+            report.broken_edges_count++;
+            report.lost_flux += w;
+        }
+    }
+
+    // 3. Matrice d'adjacence O(N^2) pour parcours DFS instantané
+    bool adj[MAX_MEMBERS][MAX_MEMBERS];
+    memset(adj, 0, sizeof(adj));
+    for (int e = 0; e < E; e++) {
+        int u = g->edges[e].source;
+        int v = g->edges[e].target;
+        if (u < MAX_MEMBERS && v < MAX_MEMBERS) {
+            adj[u][v] = true;
+        }
+    }
+
+    // 4. Exécution de Tarjan SCC avec Stack LIFO
+    TarjanContext ctx;
+    ctx.disc = (int*)calloc(N, sizeof(int));
+    ctx.low = (int*)calloc(N, sizeof(int));
+    ctx.on_stack = (bool*)calloc(N, sizeof(bool));
+    ctx.is_removed = is_removed;
+    ctx.stack = create_stack(N + 10);
+    ctx.time_counter = 0;
+    ctx.scc_count = 0;
+    ctx.scc_map = (int*)malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) ctx.scc_map[i] = -1;
+
+    for (int i = 0; i < N; i++) {
+        if (!is_removed[i] && ctx.disc[i] == 0) {
+            tarjan_dfs_matrix(i, N, adj, &ctx);
+        }
+    }
+
+    // 5. Agrégation des composantes fortement connexes (SCC)
+    report.total_components = ctx.scc_count;
+    int max_scc_size = 0;
+
+    for (int c = 0; c < ctx.scc_count && c < MAX_DEPTS; c++) {
+        ConnectedComponent* comp = &report.components[c];
+        comp->scc_id = c;
+        comp->member_count = 0;
+
+        int dept_counts[MAX_DEPTS] = {0};
+        char dept_names[MAX_DEPTS][MAX_STR];
+        int num_depts_seen = 0;
+
+        for (int i = 0; i < N; i++) {
+            if (ctx.scc_map[i] == c) {
+                comp->member_ids[comp->member_count++] = i;
+                const char* dname = g->nodes[i].dept;
+
+                int didx = -1;
+                for (int d = 0; d < num_depts_seen; d++) {
+                    if (strcmp(dept_names[d], dname) == 0) {
+                        didx = d;
+                        break;
+                    }
+                }
+                if (didx == -1 && num_depts_seen < MAX_DEPTS) {
+                    didx = num_depts_seen;
+                    strncpy(dept_names[num_depts_seen++], dname, MAX_STR - 1);
+                }
+                if (didx != -1) {
+                    dept_counts[didx]++;
+                }
+            }
+        }
+
+        if (comp->member_count > max_scc_size) {
+            max_scc_size = comp->member_count;
+        }
+
+        int max_dcnt = 0;
+        int d_idx = 0;
+        for (int d = 0; d < num_depts_seen; d++) {
+            if (dept_counts[d] > max_dcnt) {
+                max_dcnt = dept_counts[d];
+                d_idx = d;
+            }
+        }
+        if (num_depts_seen > 0) {
+            strncpy(comp->dominant_dept, dept_names[d_idx], MAX_STR - 1);
+        } else {
+            strcpy(comp->dominant_dept, "Autonome");
+        }
+
+        comp->is_isolated = (comp->member_count <= 2);
+        if (comp->is_isolated) {
+            report.isolated_employees_count += comp->member_count;
+        }
+    }
+
+    // 6. Indice de Fragmentation Réseau & Niveau de Risque
+    int remaining_nodes = N - report.num_resigned;
+    if (remaining_nodes > 0) {
+        report.fragmentation_index = (1.0 - ((double)max_scc_size / remaining_nodes)) * 100.0;
+    } else {
+        report.fragmentation_index = 100.0;
+    }
+
+    if (report.fragmentation_index >= 60.0) {
+        strcpy(report.risk_level, "CATASTROPHIQUE");
+        snprintf(report.impact_summary, 256,
+            "Rupture systémique : le réseau se scinde en %d îlots isolés avec %d employés coupés du flux principal.",
+            report.total_components, report.isolated_employees_count);
+    } else if (report.fragmentation_index >= 35.0) {
+        strcpy(report.risk_level, "CRITIQUE");
+        snprintf(report.impact_summary, 256,
+            "Fragmentation sévère : %d liaisons rompues et scission en %d composantes.",
+            report.broken_edges_count, report.total_components);
+    } else if (report.fragmentation_index >= 15.0) {
+        strcpy(report.risk_level, "MODÉRÉ");
+        snprintf(report.impact_summary, 256,
+            "Perturbation modérée : %d liaisons rompues mais le noyau principal reste connecté.",
+            report.broken_edges_count);
+    } else {
+        strcpy(report.risk_level, "FAIBLE");
+        snprintf(report.impact_summary, 256,
+            "Réseau résilient : %d liaisons perdues sans fragmentation majeure.",
+            report.broken_edges_count);
+    }
+
+    free(is_removed);
+    free(ctx.disc);
+    free(ctx.low);
+    free(ctx.on_stack);
+    free(ctx.scc_map);
+    free_stack(ctx.stack);
+
+    return report;
+}

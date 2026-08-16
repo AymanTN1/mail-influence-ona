@@ -9,60 +9,88 @@ export default function App() {
   const [resignationImpact, setResignationImpact] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
-  const [activeTab, setActiveTab] = useState('tribes'); // 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
+  const [activeTab, setActiveTab] = useState('crashtest'); // 'crashtest' | 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
+  const [customResignedNodes, setCustomResignedNodes] = useState([5, 6]); // default 2 nodes
 
   // Mode secours (Mock data)
   const mockData = {
     nodes: [
-      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0654, betweenness: 12.5 },
-      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 18.0 },
-      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 24.5 },
-      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0644, betweenness: 14.0 },
-      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0642, betweenness: 11.0 }
+      { id: 0, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0705, betweenness: 3.0 },
+      { id: 1, name: 'Lucas Scott', email: 'lucas@corp.com', dept: 'Sales', role: 'Sales Lead', pageRank: 0.0609, betweenness: 1.5 },
+      { id: 2, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0635, betweenness: 2.3 },
+      { id: 3, name: 'Rachel Green', email: 'rachel@corp.com', dept: 'HR', role: 'Talent Lead', pageRank: 0.0611, betweenness: 2.5 },
+      { id: 4, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0696, betweenness: 3.6 },
+      { id: 5, name: 'Sophia Lin', email: 'sophia@corp.com', dept: 'Product', role: 'Product Owner', pageRank: 0.0710, betweenness: 2.4 },
+      { id: 6, name: 'Emma Watson', email: 'emma@corp.com', dept: 'Design', role: 'Lead UI/UX', pageRank: 0.0692, betweenness: 4.9 },
+      { id: 7, name: 'Elena Rostova', email: 'elena@corp.com', dept: 'Engineering', role: 'Senior Dev', pageRank: 0.0650, betweenness: 2.3 },
+      { id: 8, name: 'Harvey Specter', email: 'harvey@corp.com', dept: 'Legal', role: 'General Counsel', pageRank: 0.0640, betweenness: 2.6 },
+      { id: 9, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 1.0 },
+      { id: 10, name: 'James Vance', email: 'james@corp.com', dept: 'Product', role: 'Head of Product', pageRank: 0.0678, betweenness: 2.1 },
+      { id: 11, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 1.5 },
+      { id: 12, name: 'Michael Chang', email: 'michael@corp.com', dept: 'Finance', role: 'CFO', pageRank: 0.0699, betweenness: 2.7 },
+      { id: 13, name: 'Donna Paulsen', email: 'donna@corp.com', dept: 'Executive', role: 'Chief of Staff', pageRank: 0.0674, betweenness: 1.5 },
+      { id: 14, name: 'Louis Litt', email: 'louis@corp.com', dept: 'Legal', role: 'Senior Partner', pageRank: 0.0725, betweenness: 1.1 }
     ],
     edges: [
-      { source: 0, target: 2, weight: 4.5 },
-      { source: 2, target: 0, weight: 3.8 },
-      { source: 0, target: 1, weight: 2.5 },
-      { source: 1, target: 3, weight: 3.0 },
-      { source: 3, target: 4, weight: 1.8 },
-      { source: 4, target: 2, weight: 2.0 },
-      { source: 2, target: 1, weight: 1.2 }
+      { source: 0, target: 1, weight: 4.5 },
+      { source: 2, target: 3, weight: 3.8 },
+      { source: 4, target: 11, weight: 4.8 },
+      { source: 5, target: 6, weight: 4.2 },
+      { source: 8, target: 14, weight: 3.9 },
+      { source: 9, target: 13, weight: 4.1 },
+      { source: 10, target: 5, weight: 3.5 },
+      { source: 11, target: 7, weight: 3.7 },
+      { source: 12, target: 9, weight: 3.6 }
     ],
     silos: [
-      { dept: 'Engineering', members: 3, internalFlux: 237.9, externalFlux: 2469.4, isolationScore: 8.8, isSilo: false },
-      { dept: 'Executive', members: 2, internalFlux: 41.9, externalFlux: 1847.3, isolationScore: 2.2, isSilo: false },
-      { dept: 'HR', members: 2, internalFlux: 67.7, externalFlux: 1783.7, isolationScore: 3.7, isSilo: false },
-      { dept: 'Sales', members: 2, internalFlux: 53.9, externalFlux: 1753.2, isolationScore: 3.0, isSilo: false }
+      { dept: 'Sales', members: 2, internalFlux: 387.6, externalFlux: 1501.3, isolationScore: 20.5, isSilo: false },
+      { dept: 'HR', members: 2, internalFlux: 280.8, externalFlux: 1501.6, isolationScore: 15.8, isSilo: false },
+      { dept: 'Engineering', members: 3, internalFlux: 1238.1, externalFlux: 2561.7, isolationScore: 32.6, isSilo: false }
     ],
     busFactor: [
-      { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 527.7, outFlux: 490.7, overloadScore: 1156.6, isCritical: true },
-      { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', inFlux: 482.2, outFlux: 471.3, overloadScore: 1052.3, isCritical: true },
-      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 488.9, outFlux: 504.4, overloadScore: 1070.3, isCritical: true }
+      { nodeId: 5, name: 'Sophia Lin', dept: 'Product', role: 'Product Owner', inFlux: 913.9, outFlux: 847.3, overloadScore: 1829.9, isCritical: true },
+      { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', inFlux: 892.7, outFlux: 788.6, overloadScore: 1792.2, isCritical: true },
+      { nodeId: 11, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 818.9, outFlux: 910.5, overloadScore: 1639.2, isCritical: true }
     ],
     boundarySpanners: [
-      { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', betweenness: 24.5, normalizedBetweenness: 13.5, externalDeptsCount: 5, bridgeScore: 38.4, isKeyBroker: true },
-      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', betweenness: 18.0, normalizedBetweenness: 9.8, externalDeptsCount: 4, bridgeScore: 29.2, isKeyBroker: true }
+      { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', betweenness: 4.9, normalizedBetweenness: 2.71, externalDeptsCount: 7, bridgeScore: 34.4, isKeyBroker: true },
+      { nodeId: 4, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', betweenness: 3.6, normalizedBetweenness: 1.95, externalDeptsCount: 7, bridgeScore: 29.7, isKeyBroker: true }
     ],
     communities: [
-      { id: 0, label: 'Tribu 1 (Engineering & Tech Core)', memberCount: 5, dominantDept: 'Engineering', internalFlux: 450.0, externalFlux: 180.0, cohesionScore: 71.4, memberIds: [0, 2, 7, 8, 11] },
-      { id: 1, label: 'Tribu 2 (Executive, Product & Legal)', memberCount: 6, dominantDept: 'Product', internalFlux: 520.0, externalFlux: 210.0, cohesionScore: 71.2, memberIds: [1, 4, 5, 6, 10, 13] },
-      { id: 2, label: 'Tribu 3 (People & Growth)', memberCount: 4, dominantDept: 'HR', internalFlux: 310.0, externalFlux: 140.0, cohesionScore: 68.9, memberIds: [3, 9, 12, 14] }
+      { id: 0, label: 'Tribu 1 (Sales & Co)', memberCount: 4, dominantDept: 'Sales', internalFlux: 2019.6, externalFlux: 300.5, cohesionScore: 87.0, memberIds: [0, 1, 2, 3] },
+      { id: 1, label: 'Tribu 2 (Engineering & Co)', memberCount: 5, dominantDept: 'Engineering', internalFlux: 4057.9, externalFlux: 364.6, cohesionScore: 91.8, memberIds: [4, 5, 6, 7, 11] },
+      { id: 2, label: 'Tribu 3 (Legal & Co)', memberCount: 6, dominantDept: 'Legal', internalFlux: 3169.1, externalFlux: 365.3, cohesionScore: 89.7, memberIds: [8, 9, 10, 12, 13, 14] }
     ],
+    cascadingSimulation: {
+      numResigned: 2,
+      resignedNodeIds: [5, 6],
+      brokenEdgesCount: 624,
+      lostFlux: 1980.5,
+      totalComponents: 3,
+      isolatedEmployeesCount: 2,
+      fragmentationIndex: 38.5,
+      riskLevel: 'CRITIQUE',
+      impactSummary: 'Fragmentation sévère : 624 liaisons rompues et scission du réseau en 3 composantes.',
+      components: [
+        { sccId: 0, memberCount: 8, dominantDept: 'Legal', isIsolated: false, memberIds: [0, 1, 2, 3, 8, 9, 13, 14] },
+        { sccId: 1, memberCount: 3, dominantDept: 'Engineering', isIsolated: false, memberIds: [4, 7, 11] },
+        { sccId: 2, memberCount: 2, dominantDept: 'Product', isIsolated: true, memberIds: [10, 12] }
+      ]
+    },
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.09,
-      pageRankTimeMs: 0.12,
-      totalTimeMs: 1.31
+      parseTimeMs: 1.37,
+      pageRankTimeMs: 0.23,
+      totalTimeMs: 1.75
     },
     auditReport: {
-      healthScore: 64.0,
+      healthScore: 61.2,
       grade: 'C',
       density: 100.0,
-      reciprocity: 100.0,
-      crossDeptConnectivity: 96.0,
+      reciprocity: 98.2,
+      crossDeptConnectivity: 86.5,
       resilienceScore: 0.0,
       executiveSummary: 'Risques de surcharge et de silos nécessitant un suivi managérial.',
       recommendations: [
@@ -78,6 +106,9 @@ export default function App() {
           .then((json) => {
             setData(json);
             setBackendOnline(true);
+            if (json.cascadingSimulation?.resignedNodeIds) {
+              setCustomResignedNodes(json.cascadingSimulation.resignedNodeIds);
+            }
           })
           .catch(() => {
             setData(mockData);
@@ -93,6 +124,7 @@ export default function App() {
   const auditReport = currentData.auditReport || mockData.auditReport;
   const boundarySpanners = currentData.boundarySpanners || mockData.boundarySpanners;
   const communities = currentData.communities || mockData.communities;
+  const cascading = currentData.cascadingSimulation || mockData.cascadingSimulation;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -132,6 +164,14 @@ export default function App() {
       x: cx + radius * Math.cos(angle),
       y: cy + radius * Math.sin(angle)
     };
+  };
+
+  const toggleResignedNode = (nodeId) => {
+    if (customResignedNodes.includes(nodeId)) {
+      setCustomResignedNodes(customResignedNodes.filter(id => id !== nodeId));
+    } else {
+      setCustomResignedNodes([...customResignedNodes, nodeId]);
+    }
   };
 
   const handleSimulatePropagation = (node) => {
@@ -174,57 +214,155 @@ export default function App() {
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Intelligence Réseau & Détection de Communautés en C
+            Intelligence Réseau & Théorie des Graphes en C
           </p>
         </div>
 
-        {/* 6 Navigation Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        {/* 7 Navigation Tabs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button 
+            className={`tab-btn ${activeTab === 'crashtest' ? 'active' : ''}`}
+            onClick={() => setActiveTab('crashtest')}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+          >
+            🌪️ Crash
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'tribes' ? 'active' : ''}`}
             onClick={() => setActiveTab('tribes')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             🔮 Tribus
           </button>
           <button 
             className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`}
             onClick={() => setActiveTab('bridges')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             🌉 Ponts
           </button>
           <button 
             className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
             onClick={() => setActiveTab('audit')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             📑 Audit
           </button>
           <button 
             className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             🏆 Leaders
           </button>
           <button 
             className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
             onClick={() => setActiveTab('busfactor')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             ⚠️ Risque
           </button>
           <button 
             className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
             onClick={() => setActiveTab('silos')}
-            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
           >
             🏢 Silos
           </button>
         </div>
 
-        {/* Tab 0: Tribus & Communautés Informelles (LPA Algorithm in C) */}
+        {/* Tab 0: Crash Test & Départs en Cascade (Tarjan SCC) */}
+        {activeTab === 'crashtest' && cascading && (
+          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
+            {/* Crash Test Gauge Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#ef4444' : '#f59e0b'}`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Crash Test Réseau (Tarjan)
+                </span>
+                <span style={{
+                  fontSize: '0.62rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: '#7f1d1d',
+                  color: '#fca5a5',
+                  fontWeight: 700
+                }}>
+                  🚨 {cascading.riskLevel}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '4px' }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f87171' }}>
+                  {cascading.fragmentationIndex.toFixed(1)}%
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Fragmentation Réseau
+                </span>
+              </div>
+              <p style={{ fontSize: '0.7rem', color: '#e2e8f0', margin: '4px 0 0 0', lineHeight: 1.3 }}>
+                {cascading.impactSummary}
+              </p>
+            </div>
+
+            {/* Metrics Breakdown */}
+            <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Départs Similés:</span>
+                <strong style={{ color: '#ef4444' }}>{customResignedNodes.length} personnes</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Liaisons Emails Rompues:</span>
+                <strong>{cascading.brokenEdgesCount} flux</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Composantes Tarjan (SCC):</span>
+                <strong>{cascading.totalComponents} îlots</strong>
+              </div>
+            </div>
+
+            {/* Interactive Resignation Toggle List */}
+            <div style={{ background: '#111827', padding: '8px 10px', borderRadius: '8px', border: '1px solid #374151' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fca5a5', display: 'block', marginBottom: '6px' }}>
+                Simuler le départ de collaborateurs :
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {currentData.nodes.slice(0, 7).map((node) => {
+                  const isResigned = customResignedNodes.includes(node.id);
+                  return (
+                    <div
+                      key={node.id}
+                      onClick={() => toggleResignedNode(node.id)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: isResigned ? '#450a0a' : '#1e293b',
+                        padding: '5px 8px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        border: isResigned ? '1px solid #ef4444' : '1px solid #374151'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.72rem', color: isResigned ? '#fca5a5' : '#f3f4f6', textDecoration: isResigned ? 'line-through' : 'none' }}>
+                        {node.name} ({node.dept})
+                      </span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isResigned ? '#ef4444' : '#9ca3af' }}>
+                        {isResigned ? '❌ DÉPART' : '🟢 ACTIF'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 1: Tribus & Communautés Informelles (LPA Algorithm in C) */}
         {activeTab === 'tribes' && communities && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -281,7 +419,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
+        {/* Tab 2: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
         {activeTab === 'bridges' && boundarySpanners && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -328,7 +466,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Audit de Santé Organisationnelle (Score 0-100) */}
+        {/* Tab 3: Audit de Santé Organisationnelle (Score 0-100) */}
         {activeTab === 'audit' && auditReport && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '290px', overflowY: 'auto' }}>
             <div style={{
@@ -386,7 +524,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 3: Leaders Informels (PageRank) */}
+        {/* Tab 4: Leaders Informels (PageRank) */}
         {activeTab === 'influence' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -423,7 +561,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 4: Bus Factor & Risque de Surcharge (Max-Heap C) */}
+        {/* Tab 5: Bus Factor & Risque de Surcharge (Max-Heap C) */}
         {activeTab === 'busfactor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -470,7 +608,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 5: Silos Organisationnels & Isolation (Homophily C) */}
+        {/* Tab 6: Silos Organisationnels & Isolation (Homophily C) */}
         {activeTab === 'silos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -620,7 +758,8 @@ export default function App() {
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {selectedCommunity !== null ? `Filtrage actif sur la communauté informelle : Tribu ${selectedCommunity + 1}` : 
+              {activeTab === 'crashtest' ? `Mode Crash Test : ${customResignedNodes.length} départs simulés (Composantes de Tarjan).` :
+               selectedCommunity !== null ? `Filtrage actif sur la communauté informelle : Tribu ${selectedCommunity + 1}` : 
                selectedDept ? `Filtrage actif sur : ${selectedDept}` : 
                'Cliquez sur une tribu ou un collaborateur pour analyser les clans et les flux d\'influence.'}
             </p>
@@ -669,6 +808,10 @@ export default function App() {
               const tgtNode = currentData.nodes[edge.target];
               const isInternal = srcNode?.dept === tgtNode?.dept;
 
+              const isSourceResigned = activeTab === 'crashtest' && customResignedNodes.includes(edge.source);
+              const isTargetResigned = activeTab === 'crashtest' && customResignedNodes.includes(edge.target);
+              const isBrokenEdge = isSourceResigned || isTargetResigned;
+
               const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
               const isCommunityEdge = activeCommunityObj && 
                 activeCommunityObj.memberIds?.includes(edge.source) && 
@@ -685,11 +828,11 @@ export default function App() {
                   y1={sourcePos.y}
                   x2={targetPos.x}
                   y2={targetPos.y}
-                  stroke={isHighlighted ? (isCommunityEdge ? getCommunityColor(selectedCommunity) : (isInternal ? '#3b82f6' : '#38bdf8')) : '#334155'}
-                  strokeWidth={edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5}
-                  strokeDasharray={isInternal ? 'none' : '4,2'}
-                  markerEnd={isHighlighted ? "url(#arrow-highlight)" : "url(#arrow)"}
-                  opacity={selectedNode || selectedDept || selectedCommunity !== null ? (isHighlighted ? 0.95 : 0.08) : 0.65}
+                  stroke={isBrokenEdge ? '#7f1d1d' : (isHighlighted ? (isCommunityEdge ? getCommunityColor(selectedCommunity) : (isInternal ? '#3b82f6' : '#38bdf8')) : '#334155')}
+                  strokeWidth={isBrokenEdge ? 1.0 : (edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5)}
+                  strokeDasharray={isBrokenEdge ? '2,4' : (isInternal ? 'none' : '4,2')}
+                  markerEnd={isBrokenEdge ? 'none' : (isHighlighted ? 'url(#arrow-highlight)' : 'url(#arrow)')}
+                  opacity={isBrokenEdge ? 0.25 : (selectedNode || selectedDept || selectedCommunity !== null ? (isHighlighted ? 0.95 : 0.08) : 0.65)}
                   style={{ transition: 'all 0.2s ease' }}
                 />
               );
@@ -700,6 +843,7 @@ export default function App() {
               const totalNodes = currentData.nodes.length;
               const pos = getNodePos(idx, totalNodes);
 
+              const isResigned = activeTab === 'crashtest' && customResignedNodes.includes(node.id);
               const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
               const isNodeInCommunity = activeCommunityObj?.memberIds?.includes(node.id);
 
@@ -716,11 +860,18 @@ export default function App() {
                 <g 
                   key={node.id} 
                   transform={`translate(${pos.x}, ${pos.y})`} 
-                  onClick={() => { setSelectedNode(node); setSelectedDept(null); }} 
+                  onClick={() => {
+                    if (activeTab === 'crashtest') {
+                      toggleResignedNode(node.id);
+                    } else {
+                      setSelectedNode(node);
+                      setSelectedDept(null);
+                    }
+                  }} 
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Warning pulse ring for critical Bus Factor */}
-                  {isCriticalBusFactor && (
+                  {isCriticalBusFactor && !isResigned && (
                     <circle
                       r={radius + 6}
                       fill="none"
@@ -732,7 +883,7 @@ export default function App() {
                   )}
 
                   {/* Purple aura ring for Key Boundary Spanners / Brokers */}
-                  {isKeyBridge && (
+                  {isKeyBridge && !isResigned && (
                     <circle
                       r={radius + 9}
                       fill="none"
@@ -745,25 +896,27 @@ export default function App() {
 
                   <circle
                     r={radius}
-                    fill={isSelected ? '#1e293b' : '#111827'}
-                    stroke={isSelected ? (selectedCommunity !== null ? getCommunityColor(selectedCommunity) : '#38bdf8') : deptColor}
-                    strokeWidth={isSelected ? 3.5 : 2}
+                    fill={isResigned ? '#3f1010' : (isSelected ? '#1e293b' : '#111827')}
+                    stroke={isResigned ? '#ef4444' : (isSelected ? (selectedCommunity !== null ? getCommunityColor(selectedCommunity) : '#38bdf8') : deptColor)}
+                    strokeWidth={isResigned ? 3 : (isSelected ? 3.5 : 2)}
+                    strokeDasharray={isResigned ? '3,3' : 'none'}
+                    opacity={isResigned ? 0.6 : 1.0}
                     style={{ transition: 'all 0.2s ease' }}
                   />
                   <text
                     textAnchor="middle"
                     dy="4"
-                    fill="#f9fafb"
+                    fill={isResigned ? '#fca5a5' : '#f9fafb'}
                     fontSize={totalNodes > 10 ? '9.5' : '11'}
                     fontWeight="700"
                     style={{ pointerEvents: 'none' }}
                   >
-                    {node.name.split(' ')[0]}
+                    {isResigned ? '❌ ' + node.name.split(' ')[0] : node.name.split(' ')[0]}
                   </text>
                   <text
                     textAnchor="middle"
                     dy={radius + 14}
-                    fill={deptColor}
+                    fill={isResigned ? '#f87171' : deptColor}
                     fontSize={totalNodes > 10 ? '8.5' : '10'}
                     fontWeight="600"
                     style={{ pointerEvents: 'none' }}
