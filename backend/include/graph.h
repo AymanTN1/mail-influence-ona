@@ -10,6 +10,7 @@
 // Représentation d'un Employé (Nœud du Graphe ONA)
 typedef struct {
     int id;
+    int dept_id;
     char name[MAX_STR];
     char email[MAX_STR];
     char dept[MAX_STR];

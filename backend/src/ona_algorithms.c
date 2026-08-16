@@ -1,29 +1,46 @@
 #include "../include/ona_algorithms.h"
+#include <math.h>
 
-// Algorithme PageRank (Power Iteration)
+// Algorithme PageRank Optimisé (Power Iteration avec Sortie Anticipée & Inverse Précalculé)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor) {
     if (!g || g->num_nodes == 0) return;
 
     int N = g->num_nodes;
     double* new_pr = (double*)malloc(N * sizeof(double));
-    double initial_rank = 1.0 / N;
+    double* inv_out_weight = (double*)calloc(N, sizeof(double));
+    double* out_weight_sum = (double*)calloc(N, sizeof(double));
 
-    // Initialisation
+    if (!new_pr || !inv_out_weight || !out_weight_sum) {
+        if (new_pr) free(new_pr);
+        if (inv_out_weight) free(inv_out_weight);
+        if (out_weight_sum) free(out_weight_sum);
+        return;
+    }
+
+    double initial_rank = 1.0 / N;
     for (int i = 0; i < N; i++) {
         g->nodes[i].page_rank = initial_rank;
     }
 
-    // Degré sortant de chaque nœud
-    double* out_weight_sum = (double*)calloc(N, sizeof(double));
+    // 1. Précalcul des sommes de poids sortants
     for (int e = 0; e < g->num_edges; e++) {
-        int src = g->edges[e].source;
-        out_weight_sum[src] += g->edges[e].weight;
+        out_weight_sum[g->edges[e].source] += g->edges[e].weight;
     }
 
-    // Boucle d'itération PageRank
+    // Précalculer 1.0 / out_weight_sum pour remplacer les divisions par des multiplications rapides
+    for (int i = 0; i < N; i++) {
+        if (out_weight_sum[i] > 1e-9) {
+            inv_out_weight[i] = 1.0 / out_weight_sum[i];
+        }
+    }
+
+    double base_rank = (1.0 - damping_factor) / N;
+    double epsilon = 1e-6; // Seuil de convergence
+
+    // 2. Boucle d'itération PageRank vectorielle
     for (int iter = 0; iter < iterations; iter++) {
         for (int i = 0; i < N; i++) {
-            new_pr[i] = (1.0 - damping_factor) / N;
+            new_pr[i] = base_rank;
         }
 
         for (int e = 0; e < g->num_edges; e++) {
@@ -31,18 +48,25 @@ void calculate_pagerank(Graph* g, int iterations, double damping_factor) {
             int tgt = g->edges[e].target;
             double w = g->edges[e].weight;
 
-            if (out_weight_sum[src] > 0) {
-                new_pr[tgt] += damping_factor * (g->nodes[src].page_rank * (w / out_weight_sum[src]));
+            if (out_weight_sum[src] > 1e-9) {
+                new_pr[tgt] += damping_factor * (g->nodes[src].page_rank * (w * inv_out_weight[src]));
             }
         }
 
-        // Mise à jour des valeurs
+        // Test de convergence rapide (Early Stopping)
+        double diff = 0.0;
         for (int i = 0; i < N; i++) {
+            diff += fabs(new_pr[i] - g->nodes[i].page_rank);
             g->nodes[i].page_rank = new_pr[i];
+        }
+
+        if (diff < epsilon) {
+            break; // Convergence atteinte, pas besoin d'itérations superflues
         }
     }
 
     free(new_pr);
+    free(inv_out_weight);
     free(out_weight_sum);
 }
 
@@ -55,12 +79,10 @@ void calculate_betweenness(Graph* g) {
         g->nodes[i].betweenness = 0.0;
     }
 
-    // Compter les passages par nœuds dans les interactions
+    // Parcours direct O(E)
     for (int e = 0; e < g->num_edges; e++) {
-        int src = g->edges[e].source;
-        int tgt = g->edges[e].target;
-        g->nodes[src].betweenness += 1.0;
-        g->nodes[tgt].betweenness += 1.0;
+        g->nodes[g->edges[e].source].betweenness += 1.0;
+        g->nodes[g->edges[e].target].betweenness += 1.0;
     }
 }
 
@@ -112,7 +134,6 @@ int simulate_resignation(Graph* g, int remove_node_id) {
     printf("\n🔮 --- Simulation de Démission du membre: %s (%s - %s) ---\n",
            g->nodes[remove_node_id].name, g->nodes[remove_node_id].role, g->nodes[remove_node_id].dept);
 
-    // Compter combien d'arêtes sont rompues
     int broken_edges = 0;
     for (int e = 0; e < g->num_edges; e++) {
         if (g->edges[e].source == remove_node_id || g->edges[e].target == remove_node_id) {
@@ -124,14 +145,14 @@ int simulate_resignation(Graph* g, int remove_node_id) {
     return broken_edges;
 }
 
-// Analyse des Silos Organisationnels & Score d'Isolation Inter-Départements
+// Analyse des Silos Organisationnels Optimisée (Indexation O(1) sans strcmp dans la boucle)
 SiloReport analyze_department_silos(Graph* g) {
     SiloReport report;
     memset(&report, 0, sizeof(SiloReport));
 
     if (!g || g->num_nodes == 0) return report;
 
-    // 1. Identifier les départements uniques et compter les membres
+    // 1. Identifier les départements uniques et pré-assigner dept_id aux nœuds
     for (int i = 0; i < g->num_nodes; i++) {
         const char* dname = g->nodes[i].dept;
         int found = -1;
@@ -150,20 +171,17 @@ SiloReport analyze_department_silos(Graph* g) {
             report.num_depts++;
         }
         if (found != -1) {
+            g->nodes[i].dept_id = found; // Stockage de l'ID entier pour accès direct O(1)
             report.depts[found].member_count++;
         }
     }
 
-    // 2. Construire la matrice d'échange et sommer les flux
+    // 2. Construire la matrice d'échange en O(E) sans AUCUN strcmp
     for (int e = 0; e < g->num_edges; e++) {
-        int src_dept = -1;
-        int tgt_dept = -1;
-        for (int d = 0; d < report.num_depts; d++) {
-            if (strcmp(report.depts[d].name, g->nodes[g->edges[e].source].dept) == 0) src_dept = d;
-            if (strcmp(report.depts[d].name, g->nodes[g->edges[e].target].dept) == 0) tgt_dept = d;
-        }
+        int src_dept = g->nodes[g->edges[e].source].dept_id;
+        int tgt_dept = g->nodes[g->edges[e].target].dept_id;
 
-        if (src_dept != -1 && tgt_dept != -1) {
+        if (src_dept >= 0 && tgt_dept >= 0) {
             double w = g->edges[e].weight;
             report.matrix[src_dept][tgt_dept] += w;
 
@@ -184,7 +202,6 @@ SiloReport analyze_department_silos(Graph* g) {
         } else {
             report.depts[d].isolation_score = 0.0;
         }
-        // Un département est considéré comme un Silo si > 50% de ses flux restent internes
         report.depts[d].is_silo = (report.depts[d].isolation_score >= 50.0);
     }
 
@@ -203,7 +220,14 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
     double* out_flux = (double*)calloc(N, sizeof(double));
     int* in_deg = (int*)calloc(N, sizeof(int));
 
-    // 1. Calculer les flux entrants et sortants pour chaque employé
+    if (!in_flux || !out_flux || !in_deg) {
+        if (in_flux) free(in_flux);
+        if (out_flux) free(out_flux);
+        if (in_deg) free(in_deg);
+        return report;
+    }
+
+    // 1. Calculer les flux entrants et sortants pour chaque employé en O(E)
     for (int e = 0; e < g->num_edges; e++) {
         int src = g->edges[e].source;
         int tgt = g->edges[e].target;
@@ -214,7 +238,7 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
         in_deg[tgt]++;
     }
 
-    // 2. Insérer dans le Tas Binaire Max (Max-Heap)
+    // 2. Insérer dans le Tas Binaire Max (Max-Heap) en O(N log N)
     MaxHeap* heap = create_max_heap(N);
     for (int i = 0; i < N; i++) {
         double ratio = (out_flux[i] > 0.0) ? (in_flux[i] / out_flux[i]) : in_flux[i];
@@ -249,7 +273,7 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
     return report;
 }
 
-// Générateur du Rapport d'Audit & Score de Santé Organisationnelle (0-100)
+// Générateur du Rapport d'Audit & Score de Santé Organisationnelle (0-100) Optimisé
 AuditReport generate_ona_audit_report(Graph* g) {
     AuditReport report;
     memset(&report, 0, sizeof(AuditReport));
@@ -269,20 +293,29 @@ AuditReport generate_ona_audit_report(Graph* g) {
     report.density = (max_edges > 0) ? ((double)E / max_edges) * 100.0 : 0.0;
     if (report.density > 100.0) report.density = 100.0;
 
-    // 2. Taux de Réciprocité Bilatérale (R)
+    // 2. Taux de Réciprocité Bilatérale Optimisé en O(E) via Matrice d'Adjacence Booléenne
+    bool* adj = (bool*)calloc(N * N, sizeof(bool));
     int reciprocal_count = 0;
-    int max_check = (E > 500) ? 500 : E; // Vérification optimisée
-    for (int i = 0; i < max_check; i++) {
-        int u = g->edges[i].source;
-        int v = g->edges[i].target;
-        for (int j = 0; j < max_check; j++) {
-            if (i != j && g->edges[j].source == v && g->edges[j].target == u) {
+
+    if (adj) {
+        for (int i = 0; i < E; i++) {
+            int u = g->edges[i].source;
+            int v = g->edges[i].target;
+            adj[u * N + v] = true;
+        }
+
+        for (int i = 0; i < E; i++) {
+            int u = g->edges[i].source;
+            int v = g->edges[i].target;
+            if (adj[v * N + u]) {
                 reciprocal_count++;
-                break;
             }
         }
+        free(adj);
+        report.reciprocity = (E > 0) ? ((double)reciprocal_count / E) * 100.0 : 0.0;
+    } else {
+        report.reciprocity = 50.0;
     }
-    report.reciprocity = (max_check > 0) ? ((double)reciprocal_count / max_check) * 100.0 : 0.0;
 
     // 3. Connectivité Inter-Équipes (Cross-Department)
     SiloReport silos = analyze_department_silos(g);
@@ -348,6 +381,3 @@ AuditReport generate_ona_audit_report(Graph* g) {
 
     return report;
 }
-
-
-

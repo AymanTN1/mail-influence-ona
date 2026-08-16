@@ -52,6 +52,21 @@ void generate_enterprise_mock_dataset(const char* filepath, int num_records) {
     fclose(fp);
 }
 
+static inline char* fast_next_field(char** cursor) {
+    char* start = *cursor;
+    if (!start || *start == '\0') return NULL;
+    char* comma = strchr(start, ',');
+    if (comma) {
+        *comma = '\0';
+        *cursor = comma + 1;
+    } else {
+        char* nl = strpbrk(start, "\r\n");
+        if (nl) *nl = '\0';
+        *cursor = NULL;
+    }
+    return start;
+}
+
 Graph* ingest_csv_and_benchmark(const char* filepath, BenchmarkResult* bench) {
     if (!bench) return NULL;
     memset(bench, 0, sizeof(BenchmarkResult));
@@ -79,61 +94,31 @@ Graph* ingest_csv_and_benchmark(const char* filepath, BenchmarkResult* bench) {
     }
 
     while (fgets(line, sizeof(line), fp)) {
-        // Nettoyer les fins de ligne (\r, \n)
-        line[strcspn(line, "\r\n")] = '\0';
-        if (strlen(line) == 0) continue;
+        char* cursor = line;
+        char* from_email = fast_next_field(&cursor);
+        char* from_name  = fast_next_field(&cursor);
+        char* from_dept  = fast_next_field(&cursor);
+        char* from_role  = fast_next_field(&cursor);
+        char* to_email   = fast_next_field(&cursor);
+        char* to_name    = fast_next_field(&cursor);
+        char* to_dept    = fast_next_field(&cursor);
+        char* to_role    = fast_next_field(&cursor);
+        char* weight_str = fast_next_field(&cursor);
 
-        char from_email[MAX_STR], from_name[MAX_STR], from_dept[MAX_STR], from_role[MAX_STR];
-        char to_email[MAX_STR], to_name[MAX_STR], to_dept[MAX_STR], to_role[MAX_STR];
-        double weight = 1.0;
+        if (!from_email || !to_email) continue;
 
-        char* token = strtok(line, ",");
-        if (!token) continue;
-        strncpy(from_email, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(from_name, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(from_dept, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(from_role, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(to_email, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(to_name, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(to_dept, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (!token) continue;
-        strncpy(to_role, token, MAX_STR - 1);
-
-        token = strtok(NULL, ",");
-        if (token) {
-            weight = atof(token);
-        }
+        double weight = weight_str ? atof(weight_str) : 1.0;
 
         // Indexation O(1) dans la Hash Table
         int src_id = ht_get(ht, from_email);
         if (src_id == -1) {
-            src_id = add_node(g, from_name, from_email, from_dept, from_role);
+            src_id = add_node(g, from_name ? from_name : "Unknown", from_email, from_dept ? from_dept : "General", from_role ? from_role : "Member");
             ht_insert(ht, from_email, src_id);
         }
 
         int tgt_id = ht_get(ht, to_email);
         if (tgt_id == -1) {
-            tgt_id = add_node(g, to_name, to_email, to_dept, to_role);
+            tgt_id = add_node(g, to_name ? to_name : "Unknown", to_email, to_dept ? to_dept : "General", to_role ? to_role : "Member");
             ht_insert(ht, to_email, tgt_id);
         }
 
@@ -144,7 +129,7 @@ Graph* ingest_csv_and_benchmark(const char* filepath, BenchmarkResult* bench) {
     fclose(fp);
     clock_t end_parse = clock();
 
-    // Calcul de PageRank & Betweenness
+    // Calcul de PageRank & Betweenness avec algorithmes optimisés
     clock_t start_pr = clock();
     calculate_pagerank(g, 25, 0.85);
     calculate_betweenness(g);

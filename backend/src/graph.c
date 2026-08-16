@@ -30,6 +30,7 @@ int add_node(Graph* g, const char* name, const char* email, const char* dept, co
 
     int id = g->num_nodes;
     g->nodes[id].id = id;
+    g->nodes[id].dept_id = -1;
     strncpy(g->nodes[id].name, name, MAX_STR - 1);
     strncpy(g->nodes[id].email, email, MAX_STR - 1);
     strncpy(g->nodes[id].dept, dept, MAX_STR - 1);
