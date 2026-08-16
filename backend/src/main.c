@@ -1,43 +1,43 @@
 #include "../include/graph.h"
 #include "../include/ona_algorithms.h"
 #include "../include/http_server.h"
+#include "../include/csv_parser.h"
 
 int main(int argc, char* argv[]) {
     printf("=====================================================\n");
-    printf(" 🌐✉️ MailInfluence-ONA | Backend Engine (Langage C)\n");
+    printf(" 🌐✉️ MailInfluence-ONA | High Performance C Engine\n");
     printf("=====================================================\n");
 
-    // 1. Initialisation du Graphe d'influence
-    Graph* g = create_graph();
+    const char* dataset_path = "../mock-data/enterprise_emails_dataset.csv";
+    BenchmarkResult bench;
 
-    // 2. Ajout des Employés (Nœuds du réseau ONA)
-    int id_sarah  = add_node(g, "Sarah Connor",  "sarah@company.com",  "Engineering", "CTO");
-    int id_alex   = add_node(g, "Alex Mercer",   "alex@company.com",   "Executive",   "CEO");
-    int id_david  = add_node(g, "David Miller",  "david@company.com",  "Engineering", "Tech Lead");
-    int id_claire = add_node(g, "Claire Bennet", "claire@company.com", "HR",          "HR Director");
-    int id_mark   = add_node(g, "Mark Sloan",    "mark@company.com",    "Sales",       "VP Sales");
+    // 1. Ingestion Haute Performance du fichier CSV & Indexation Hash Table O(1)
+    printf("⚡ Ingestion du dataset CSV en cours (%s)...\n", dataset_path);
+    Graph* g = ingest_csv_and_benchmark(dataset_path, &bench);
 
-    // 3. Ajout des Interactions Emails (Arêtes Orientées avec Poids)
-    add_edge(g, id_sarah, id_david,  4.5); // Sarah envoie régulièrement des emails à David
-    add_edge(g, id_david, id_sarah,  3.8); // Réciprocité élevée
-    add_edge(g, id_sarah, id_alex,   2.5); // Sarah communique avec le CEO
-    add_edge(g, id_alex,  id_claire, 3.0); // CEO envoie des directives aux RH
-    add_edge(g, id_claire, id_mark,  1.8); // RH communique avec les Ventes
-    add_edge(g, id_mark,  id_david,  2.0); // Ventes envoie aux Tech Leads
-    add_edge(g, id_david, id_alex,   1.2);
+    if (!g) {
+        fprintf(stderr, "Erreur lors de l'ingestion du fichier CSV.\n");
+        return 1;
+    }
 
-    // 4. Calcul des Métriques ONA en C
-    calculate_pagerank(g, 25, 0.85);
-    calculate_betweenness(g);
+    // 2. Affichage des Métriques de Benchmark en C
+    printf("\n📊 --- BENCHMARK DE PERFORMANCE MOTEUR C11 ---\n");
+    printf("  - Lignes de logs traitées: %d emails\n", bench.rows_processed);
+    printf("  - Nœuds uniques identifiés (Hash Table): %d employés\n", bench.total_nodes);
+    printf("  - Liaisons générées: %d arêtes\n", bench.total_edges);
+    printf("  - Temps de parsing & insertion: %.2f ms\n", bench.parse_time_ms);
+    printf("  - Temps de calcul PageRank (25 itérations): %.2f ms\n", bench.pagerank_time_ms);
+    printf("  - Temps TOTAL d'exécution: %.2f ms (Moteur C Natif)\n", bench.total_time_ms);
 
-    // 5. Affichage des Leaders Informels (PageRank)
-    printf("\n🏆 --- Leaders Informels Détectés (PageRank C Engine) ---\n");
-    for (int i = 0; i < g->num_nodes; i++) {
+    // 3. Affichage des Leaders Informels (PageRank)
+    printf("\n🏆 --- Top Leaders Informels Détectés (PageRank C) ---\n");
+    int max_display = (g->num_nodes > 5) ? 5 : g->num_nodes;
+    for (int i = 0; i < max_display; i++) {
         printf("  - %-15s | %-12s | PageRank: %.4f | Intermédiarité: %.1f\n",
                g->nodes[i].name, g->nodes[i].dept, g->nodes[i].page_rank, g->nodes[i].betweenness);
     }
 
-    // 6. Analyse des Silos Organisationnels (Cross-Department Isolation)
+    // 4. Analyse des Silos Organisationnels (Cross-Department Isolation)
     printf("\n🏢 --- Analyse des Silos Organisationnels (Homophily Score en C) ---\n");
     SiloReport silos = analyze_department_silos(g);
     for (int d = 0; d < silos.num_depts; d++) {
@@ -48,10 +48,11 @@ int main(int argc, char* argv[]) {
                silos.depts[d].is_silo ? "⚠️ [SILO ALERT]" : "✅ [CONNECTÉ]");
     }
 
-    // 7. Détection du Bus Factor & Risque de Surcharge (Max-Heap C)
+    // 5. Détection du Bus Factor & Risque de Surcharge (Max-Heap C)
     printf("\n⚠️ --- Détection du Bus Factor & Risque de Surcharge (Max-Heap C) ---\n");
     BusFactorReport bf = calculate_bus_factor_and_overload(g);
-    for (int b = 0; b < bf.count; b++) {
+    int max_bf_display = (bf.count > 5) ? 5 : bf.count;
+    for (int b = 0; b < max_bf_display; b++) {
         printf("  - %-15s | %-12s | InFlux: %4.1f | OutFlux: %4.1f | Score: %5.1f %s\n",
                bf.members[b].name, bf.members[b].dept,
                bf.members[b].in_flux, bf.members[b].out_flux,
@@ -59,16 +60,18 @@ int main(int argc, char* argv[]) {
                bf.members[b].is_critical ? "🚨 [BUS FACTOR CRITIQUE]" : "🟢 [CHARGE NORMALE]");
     }
 
-    // 8. Démonstration des Simulations (Queue & Graph Traversal)
-    simulate_propagation(g, id_sarah, 3);
-    simulate_resignation(g, id_sarah);
+    // 6. Démonstration des Simulations (Queue BFS & Graph)
+    if (g->num_nodes > 0) {
+        simulate_propagation(g, 0, 3);
+        simulate_resignation(g, 0);
+    }
 
     // 7. Lancement du Serveur HTTP C ou Mode CLI
     if (argc > 1 && strcmp(argv[1], "--cli") == 0) {
         printf("\n✅ Exécution terminée en mode CLI.\n");
     } else {
         // Démarre le serveur HTTP pour alimenter le frontend React
-        start_http_server(g, 8080);
+        start_http_server(g, &bench, 8080);
     }
 
     // Libération de la mémoire

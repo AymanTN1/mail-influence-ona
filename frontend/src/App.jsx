@@ -13,11 +13,11 @@ export default function App() {
   // Mode secours (Mock data)
   const mockData = {
     nodes: [
-      { id: 0, name: 'Sarah Connor', email: 'sarah@company.com', dept: 'Engineering', role: 'CTO', pageRank: 0.2193, betweenness: 3.0 },
-      { id: 1, name: 'Alex Mercer', email: 'alex@company.com', dept: 'Executive', role: 'CEO', pageRank: 0.1563, betweenness: 3.0 },
-      { id: 2, name: 'David Miller', email: 'david@company.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.2930, betweenness: 4.0 },
-      { id: 3, name: 'Claire Bennet', email: 'claire@company.com', dept: 'HR', role: 'HR Director', pageRank: 0.1629, betweenness: 2.0 },
-      { id: 4, name: 'Mark Sloan', email: 'mark@company.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.1685, betweenness: 2.0 }
+      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.2193, betweenness: 3.0 },
+      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.1563, betweenness: 3.0 },
+      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.2930, betweenness: 4.0 },
+      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.1629, betweenness: 2.0 },
+      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.1685, betweenness: 2.0 }
     ],
     edges: [
       { source: 0, target: 2, weight: 4.5 },
@@ -40,7 +40,15 @@ export default function App() {
       { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 3.7, outFlux: 3.0, overloadScore: 9.8, isCritical: false },
       { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', inFlux: 3.0, outFlux: 1.8, overloadScore: 7.2, isCritical: false },
       { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', inFlux: 1.8, outFlux: 2.0, overloadScore: 5.4, isCritical: false }
-    ]
+    ],
+    benchmark: {
+      rowsProcessed: 2500,
+      totalNodes: 15,
+      totalEdges: 2500,
+      parseTimeMs: 1.15,
+      pageRankTimeMs: 0.42,
+      totalTimeMs: 1.57
+    }
   };
 
   useEffect(() => {
@@ -61,6 +69,7 @@ export default function App() {
   const currentData = data || mockData;
   const silosList = currentData.silos || mockData.silos;
   const busFactorList = currentData.busFactor || mockData.busFactor;
+  const benchmark = currentData.benchmark || mockData.benchmark;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -78,8 +87,23 @@ export default function App() {
       case 'Executive': return '#a855f7';
       case 'HR': return '#10b981';
       case 'Sales': return '#f97316';
+      case 'Product': return '#eab308';
+      case 'Finance': return '#06b6d4';
+      case 'Legal': return '#ec4899';
+      case 'Design': return '#8b5cf6';
       default: return '#06b6d4';
     }
+  };
+
+  const getNodePos = (idx, total) => {
+    const cx = 375;
+    const cy = 260;
+    const radius = Math.min(220, 150 + total * 4);
+    const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
+    return {
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle)
+    };
   };
 
   const handleSimulatePropagation = (node) => {
@@ -118,7 +142,7 @@ export default function App() {
               🌐 MailInfluence-ONA
             </h2>
             <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '12px', background: backendOnline ? '#064e3b' : '#374151', color: backendOnline ? '#34d399' : '#9ca3af', fontWeight: 600 }}>
-              {backendOnline ? '🟢 Engine C' : '⚪ Démo'}
+              {backendOnline ? '🟢 Engine C11' : '⚪ Démo'}
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
@@ -189,8 +213,8 @@ export default function App() {
         {activeTab === 'busfactor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b' }}>Risque de Surcharge & Bus Factor</span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Max-Heap C</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b' }}>Risque de Surcharge (Max-Heap)</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Top Risques</span>
             </div>
             <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
               {busFactorList.map((item, idx) => {
@@ -222,7 +246,7 @@ export default function App() {
                       </span>
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Reçu: <strong>{item.inFlux}</strong> | Émis: <strong>{item.outFlux}</strong></span>
+                      <span>Reçu: <strong>{item.inFlux.toFixed(1)}</strong> | Émis: <strong>{item.outFlux.toFixed(1)}</strong></span>
                       <span>Score: <strong style={{ color: item.isCritical ? '#f87171' : '#34d399' }}>{item.overloadScore.toFixed(1)}</strong></span>
                     </div>
                   </div>
@@ -277,7 +301,7 @@ export default function App() {
                     }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    <span>Interne: {silo.internalFlux}</span>
+                    <span>Interne: {silo.internalFlux.toFixed(1)}</span>
                     <span>Isolation: <strong>{silo.isolationScore.toFixed(1)}%</strong></span>
                   </div>
                 </div>
@@ -375,45 +399,55 @@ export default function App() {
 
       {/* Main Interactive Graph Visualizer Canvas Area */}
       <main className="graph-canvas">
+        {/* Header with Benchmark stats */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#f9fafb', fontWeight: 700 }}>
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {selectedDept ? `Filtrage actif sur : ${selectedDept}` : 'Cliquez sur un employé ou un onglet à gauche pour explorer l\'influence et le flux d\'emails.'}
+              {selectedDept ? `Filtrage actif sur : ${selectedDept}` : 'Cliquez sur un employé ou un onglet à gauche pour explorer l\'influence et les flux.'}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '14px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            <span>🔵 Nœuds: <strong>{currentData.nodes.length}</strong></span>
-            <span>➡️ Liaisons: <strong>{currentData.edges.length}</strong></span>
-            <span>🏢 Équipes: <strong>{silosList.length}</strong></span>
-          </div>
+
+          {/* Benchmark Badge */}
+          {benchmark && (
+            <div style={{
+              background: '#111827',
+              border: '1px solid #06b6d4',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              fontSize: '0.78rem'
+            }}>
+              <span>⚡ <strong>{benchmark.rowsProcessed.toLocaleString()}</strong> emails</span>
+              <span style={{ color: 'var(--border-subtle)' }}>|</span>
+              <span>Parsing: <strong style={{ color: '#38bdf8' }}>{benchmark.parseTimeMs.toFixed(2)} ms</strong></span>
+              <span style={{ color: 'var(--border-subtle)' }}>|</span>
+              <span>PageRank: <strong style={{ color: '#34d399' }}>{benchmark.pageRankTimeMs.toFixed(2)} ms</strong></span>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Interactive SVG Graph Visualization */}
         <div style={{ flex: 1, background: '#0b0f19', borderRadius: '12px', border: '1px solid #1f2937', position: 'relative', overflow: 'hidden' }}>
           <svg width="100%" height="100%" viewBox="0 0 750 520" style={{ width: '100%', height: '100%' }}>
             <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="32" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+              <marker id="arrow" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
               </marker>
-              <marker id="arrow-highlight" viewBox="0 0 10 10" refX="32" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <marker id="arrow-highlight" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
               </marker>
             </defs>
 
             {/* Render Edges */}
             {currentData.edges.map((edge, idx) => {
-              const positions = [
-                { x: 230, y: 170 }, // Sarah (0)
-                { x: 380, y: 380 }, // Alex (1)
-                { x: 210, y: 340 }, // David (2)
-                { x: 530, y: 350 }, // Claire (3)
-                { x: 510, y: 180 }  // Mark (4)
-              ];
-              const sourcePos = positions[edge.source % positions.length];
-              const targetPos = positions[edge.target % positions.length];
+              const totalNodes = currentData.nodes.length;
+              const sourcePos = getNodePos(edge.source % totalNodes, totalNodes);
+              const targetPos = getNodePos(edge.target % totalNodes, totalNodes);
 
               const srcNode = currentData.nodes[edge.source];
               const tgtNode = currentData.nodes[edge.target];
@@ -429,11 +463,11 @@ export default function App() {
                   y1={sourcePos.y}
                   x2={targetPos.x}
                   y2={targetPos.y}
-                  stroke={isHighlighted ? (isInternal ? '#3b82f6' : '#06b6d4') : '#374151'}
-                  strokeWidth={edge.weight ? Math.max(1.5, edge.weight * 0.8) : 2}
+                  stroke={isHighlighted ? (isInternal ? '#3b82f6' : '#06b6d4') : '#334155'}
+                  strokeWidth={edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5}
                   strokeDasharray={isInternal ? 'none' : '4,2'}
                   markerEnd={isHighlighted ? "url(#arrow-highlight)" : "url(#arrow)"}
-                  opacity={selectedNode || selectedDept ? (isHighlighted ? 0.95 : 0.15) : 0.75}
+                  opacity={selectedNode || selectedDept ? (isHighlighted ? 0.95 : 0.1) : 0.65}
                   style={{ transition: 'all 0.2s ease' }}
                 />
               );
@@ -441,16 +475,10 @@ export default function App() {
 
             {/* Render Nodes */}
             {currentData.nodes.map((node, idx) => {
-              const positions = [
-                { x: 230, y: 170 }, // Sarah (0)
-                { x: 380, y: 380 }, // Alex (1)
-                { x: 210, y: 340 }, // David (2)
-                { x: 530, y: 350 }, // Claire (3)
-                { x: 510, y: 180 }  // Mark (4)
-              ];
-              const pos = positions[node.id % positions.length];
+              const totalNodes = currentData.nodes.length;
+              const pos = getNodePos(idx, totalNodes);
               const isSelected = selectedNode?.id === node.id || (selectedDept && node.dept === selectedDept);
-              const radius = 24 + (node.pageRank || 0) * 45;
+              const radius = 20 + (node.pageRank || 0) * 45;
               const deptColor = getDeptColor(node.dept);
               const isCriticalBusFactor = busFactorList.find(b => b.nodeId === node.id)?.isCritical;
 
@@ -484,7 +512,7 @@ export default function App() {
                     textAnchor="middle"
                     dy="4"
                     fill="#f9fafb"
-                    fontSize="11"
+                    fontSize={totalNodes > 10 ? '9.5' : '11'}
                     fontWeight="700"
                     style={{ pointerEvents: 'none' }}
                   >
@@ -492,9 +520,9 @@ export default function App() {
                   </text>
                   <text
                     textAnchor="middle"
-                    dy={radius + 15}
+                    dy={radius + 14}
                     fill={deptColor}
-                    fontSize="10"
+                    fontSize={totalNodes > 10 ? '8.5' : '10'}
                     fontWeight="600"
                     style={{ pointerEvents: 'none' }}
                   >
