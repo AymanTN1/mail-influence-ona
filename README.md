@@ -1,41 +1,51 @@
 # 🌐✉️ MailInfluence-ONA
-> **Email-Based Organizational Network Analysis & Enterprise Influence Intelligence**
+> **Email-Based Organizational Network Analysis & Enterprise Influence Intelligence in C**
 
-MailInfluence-ONA est une solution complète d'**Analyse des Réseaux Organisationnels (ONA)** qui transforme le flux d'emails d'entreprise (Gmail, Outlook M365, archives `.eml`/`.mbox`) en un **Graphe d'Influence et de Collaboration** dynamique et interactif.
+MailInfluence-ONA est une solution d'**Analyse des Réseaux Organisationnels (ONA)** développée en **Langage C (C11)** avec une interface web moderne en **React**. 
+Elle transforme le flux d'emails d'entreprise en un **Graphe d'Influence et de Collaboration** dynamique et interactif.
 
 ---
 
-## 🚀 Fonctionnalités Clés
+## 🎯 Pourquoi le Backend en C ?
+Le moteur backend a été conçu de zéro en C pur pour garantir une **complexité minimale**, une **performance maximale** et un contrôle total sur les structures de données bas niveau (pointeurs, allocations dynamiques, gestion de la mémoire) :
 
-* **✉️ Ingestion Multi-Source d'Emails :** Support des formats standard d'archivage (`.eml`, `.mbox`) et connecteurs API pour Google Workspace (Gmail API) et Microsoft 365 (Microsoft Graph API).
-* **🔒 Anonymisation RGPD (Privacy-First) :** Aucune lecture du corps des emails. Extraction uniquement des métadonnées (`From`, `To`, `Cc`, `Timestamp`, `Message-ID`). Anonymisation SHA-256 disponible.
-* **⚖️ Calcul de Pondération Intelligent :** Prise en compte de la direction de l'interaction, de la réciprocité, du rôle (`TO` vs `CC`) et de la dépréciation temporelle.
-* **🧠 Algorithmes de Graphe Avancés (Centralité & Communautés) :**
-  * **PageRank (Super-Connecteurs) :** Identification des leaders informels et des experts rééls.
-  * **Centralité d'Intermédiarité (Betweenness) :** Détection des "ponts" d'information et des goulots d'étranglement inter-équipes.
-  * **Centralité de Degré (In/Out Degree) :** Mesure de la popularité vs l'activité d'émission.
-  * **Algorithme de Louvain :** Regroupement automatique en communautés d'intérêt informelles.
-* **📊 Visualiseur 2D/3D & Dashboard Interactive :** Exploration fluide du graphe d'entreprise avec coloration par département/communauté et dimensionnement selon le PageRank.
-* **🔮 Simulateur d'Impact "What-If" :** Mesure de la fragilité du réseau et de la perte de connectivité en cas de démission d'un membre clé (*Cut Vertex Detection*).
-* **📢 Simulateur de Propagation d'Information :** Visualisation de la diffusion d'une directive ou d'une information dans le graphe (parcours BFS/épidémique).
+* **📊 Structure de Graphe personnalisée (`Graph`, `Node`, `Edge`) :** Listes d'adjacence et tableaux dynamiques réallocables.
+* **📬 File FIFO (`Queue`) :** Implémentation manuelle en C pour les parcours en largeur (BFS) et le simulateur de propagation d'information.
+* **📚 Pile LIFO (`Stack`) :** Implémentation en C pour les parcours en profondeur (DFS) et retour sur trace.
+* **🧠 Algorithmes Graphe ONA natifs :**
+  * **PageRank (Power Iteration en C) :** Identification des leaders informels et experts.
+  * **Intermédiarité (Betweenness) :** Détection des goulots d'étranglement inter-équipes.
+  * **Simulateur de Propagation (BFS Queue) :** Diffusion d'une directive épidémique dans le réseau.
+  * **Simulateur d'Impact Démission ("What-If") :** Évaluation des liaisons email rompues (*Cut Vertices*).
+* **⚡ Mini-Serveur HTTP REST Sockets en C :** Sert l'API JSON directement au frontend React sur `http://localhost:8080/api/ona`.
 
 ---
 
 ## 🛠️ Stack Technique
 
-* **Backend :** Java 17 / Spring Boot 3.x, Neo4j Graph Database, Neo4j OGM / Cypher, Jackson / Mime4j (EML Parser).
-* **Frontend :** React 18, Vite, Cytoscape.js / 3D-Force-Graph, Tailwind CSS / Vanilla CSS modern design.
-* **Graphe Engine :** Neo4j Graph Data Science (GDS) / NetworkX.
-* **DevOps :** Docker, Docker Compose, GitHub Actions.
+* **Backend :** Langage C (C11), POSIX/WinSock Sockets, GCC / Make.
+* **Frontend :** React 18, Vite, CSS Tokens Modernes.
+* **DevOps :** Makefile, WSL / Linux / Windows compilation cross-plateforme.
 
 ---
 
-## 📅 Roadmap Scrum Sprints
+## 🚀 Compilation & Lancement
 
-- [x] **Sprint 1 :** Ingestion d'emails, Pondération, Anonymisation & Dépôt initial.
-- [ ] **Sprint 2 :** Intégration Neo4j & Algorithmes de Centralité (PageRank, Betweenness, Louvain).
-- [ ] **Sprint 3 :** Dashboard Web React + Visualisation de Graphe 2D/3D + Leaderboard ONA.
-- [ ] **Sprint 4 :** Simulateur d'impact Démission ("What-If") & Propagation d'information.
+### 1. Backend C Engine
+```bash
+cd backend
+make
+./ona_backend
+```
+*Le serveur backend C démarre sur `http://localhost:8080` et sert l'API JSON ONA.*
+*(Pour exécuter uniquement en mode console CLI : `./ona_backend --cli`)*
+
+### 2. Frontend React Dashboard
+```bash
+cd frontend
+npm run dev
+```
+*Ouvrez votre navigateur sur `http://localhost:5173`.*
 
 ---
 

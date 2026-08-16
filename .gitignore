@@ -9,6 +9,9 @@ target/
 build/
 node_modules/
 dist/
+*.o
+*.exe
+backend/ona_backend
 .env
 .env.local
 
