@@ -88,6 +88,23 @@ static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* benc
             (s < bsr.count - 1) ? "," : "");
     }
 
+    offset += snprintf(response_body + offset, buf_size - offset, "  ],\n  \"communities\": [\n");
+
+    CommunityReport cr = calculate_graph_communities(g);
+    for (int c = 0; c < cr.num_communities; c++) {
+        Community* comm = &cr.communities[c];
+        offset += snprintf(response_body + offset, buf_size - offset,
+            "    {\"id\": %d, \"label\": \"%s\", \"memberCount\": %d, \"dominantDept\": \"%s\", \"internalFlux\": %.2f, \"externalFlux\": %.2f, \"cohesionScore\": %.1f, \"memberIds\": [",
+            comm->id, comm->label, comm->member_count, comm->dominant_dept, comm->internal_flux, comm->external_flux, comm->cohesion_score);
+        
+        for (int m = 0; m < comm->member_count; m++) {
+            offset += snprintf(response_body + offset, buf_size - offset, "%d%s",
+                comm->member_ids[m], (m < comm->member_count - 1) ? ", " : "");
+        }
+        offset += snprintf(response_body + offset, buf_size - offset, "]}%s\n",
+            (c < cr.num_communities - 1) ? "," : "");
+    }
+
     if (bench) {
         offset += snprintf(response_body + offset, buf_size - offset, "  ],\n  \"benchmark\": {\n");
         offset += snprintf(response_body + offset, buf_size - offset,

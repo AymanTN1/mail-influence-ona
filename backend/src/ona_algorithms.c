@@ -599,3 +599,171 @@ AuditReport generate_ona_audit_report(Graph* g) {
 
     return report;
 }
+
+// Détection des Tribus & Communautés Informelles (Label Propagation Algorithm - LPA en C)
+CommunityReport calculate_graph_communities(Graph* g) {
+    CommunityReport report;
+    memset(&report, 0, sizeof(CommunityReport));
+
+    if (!g || g->num_nodes == 0) return report;
+
+    int N = g->num_nodes;
+    int E = g->num_edges;
+
+    int* labels = (int*)malloc(N * sizeof(int));
+    double* label_weights = (double*)malloc(N * sizeof(double));
+
+    if (!labels || !label_weights) {
+        if (labels) free(labels);
+        if (label_weights) free(label_weights);
+        return report;
+    }
+
+    // 1. Initialisation : Chaque collaborateur commence dans sa propre communauté
+    for (int i = 0; i < N; i++) {
+        labels[i] = i;
+    }
+
+    // 2. Propagation itérative pondérée des labels
+    int max_iterations = 15;
+    for (int iter = 0; iter < max_iterations; iter++) {
+        int changes = 0;
+
+        for (int u = 0; u < N; u++) {
+            memset(label_weights, 0, N * sizeof(double));
+
+            for (int e = 0; e < E; e++) {
+                int src = g->edges[e].source;
+                int tgt = g->edges[e].target;
+                double w = g->edges[e].weight;
+
+                if (src == u) {
+                    label_weights[labels[tgt]] += w;
+                } else if (tgt == u) {
+                    label_weights[labels[src]] += w * 0.9;
+                }
+            }
+
+            double max_w = -1.0;
+            int best_label = labels[u];
+
+            for (int i = 0; i < N; i++) {
+                if (label_weights[i] > max_w) {
+                    max_w = label_weights[i];
+                    best_label = i;
+                }
+            }
+
+            if (best_label != labels[u] && max_w > 0.0) {
+                labels[u] = best_label;
+                changes++;
+            }
+        }
+
+        if (changes == 0) break;
+    }
+
+    // 3. Agrégation des Communautés Détectées
+    int unique_labels[MAX_DEPTS];
+    int num_unique = 0;
+
+    for (int i = 0; i < N; i++) {
+        int l = labels[i];
+        int found = -1;
+        for (int c = 0; c < num_unique; c++) {
+            if (unique_labels[c] == l) {
+                found = c;
+                break;
+            }
+        }
+        if (found == -1 && num_unique < MAX_DEPTS) {
+            found = num_unique;
+            unique_labels[num_unique++] = l;
+        }
+
+        if (found != -1) {
+            report.node_community[i] = found;
+            Community* comm = &report.communities[found];
+            comm->id = found;
+            comm->member_ids[comm->member_count++] = i;
+        }
+    }
+    report.num_communities = num_unique;
+
+    // 4. Calcul des flux internes/externes, cohésion et département dominant
+    double total_network_flux = 0.0;
+    double total_internal_flux = 0.0;
+
+    for (int c = 0; c < report.num_communities; c++) {
+        Community* comm = &report.communities[c];
+        comm->internal_flux = 0.0;
+        comm->external_flux = 0.0;
+
+        int dept_counts[MAX_DEPTS] = {0};
+        char dept_names[MAX_DEPTS][MAX_STR];
+        int num_depts_seen = 0;
+
+        for (int m = 0; m < comm->member_count; m++) {
+            int nid = comm->member_ids[m];
+            const char* dname = g->nodes[nid].dept;
+
+            int didx = -1;
+            for (int d = 0; d < num_depts_seen; d++) {
+                if (strcmp(dept_names[d], dname) == 0) {
+                    didx = d;
+                    break;
+                }
+            }
+            if (didx == -1 && num_depts_seen < MAX_DEPTS) {
+                didx = num_depts_seen;
+                strncpy(dept_names[num_depts_seen++], dname, MAX_STR - 1);
+            }
+            if (didx != -1) {
+                dept_counts[didx]++;
+            }
+        }
+
+        int max_dept_cnt = 0;
+        int dominant_idx = 0;
+        for (int d = 0; d < num_depts_seen; d++) {
+            if (dept_counts[d] > max_dept_cnt) {
+                max_dept_cnt = dept_counts[d];
+                dominant_idx = d;
+            }
+        }
+        if (num_depts_seen > 0) {
+            strncpy(comm->dominant_dept, dept_names[dominant_idx], MAX_STR - 1);
+        } else {
+            strcpy(comm->dominant_dept, "Général");
+        }
+
+        for (int e = 0; e < E; e++) {
+            int src = g->edges[e].source;
+            int tgt = g->edges[e].target;
+            double w = g->edges[e].weight;
+            total_network_flux += w;
+
+            int c_src = report.node_community[src];
+            int c_tgt = report.node_community[tgt];
+
+            if (c_src == c && c_tgt == c) {
+                comm->internal_flux += w;
+                total_internal_flux += w;
+            } else if (c_src == c || c_tgt == c) {
+                comm->external_flux += w;
+            }
+        }
+
+        double total_comm_flux = comm->internal_flux + comm->external_flux;
+        comm->cohesion_score = (total_comm_flux > 0.0) ? (comm->internal_flux / total_comm_flux) * 100.0 : 0.0;
+
+        snprintf(comm->label, MAX_STR, "Tribu %d (%s & Co)", c + 1, comm->dominant_dept);
+    }
+
+    report.modularity_score = (total_network_flux > 0.0) ? (total_internal_flux / total_network_flux) : 0.0;
+
+    free(labels);
+    free(label_weights);
+
+    return report;
+}

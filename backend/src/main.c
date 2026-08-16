@@ -71,6 +71,15 @@ int main(int argc, char* argv[]) {
                bs->is_key_broker ? "🌉 [CONNECTEUR CRITIQUE]" : "🔗 [PASSERELLE]");
     }
 
+    // 7. Détection des Tribus & Communautés Informelles (LPA en C)
+    printf("\n🔮 --- Détection des Tribus & Communautés Informelles (LPA en C) ---\n");
+    CommunityReport comms = calculate_graph_communities(g);
+    for (int c = 0; c < comms.num_communities; c++) {
+        Community* cm = &comms.communities[c];
+        printf("  - %-25s | %2d Membres | Flux Interne: %5.1f | Cohésion: %5.1f%%\n",
+               cm->label, cm->member_count, cm->internal_flux, cm->cohesion_score);
+    }
+
     // 6. Rapport d'Audit Global de Santé Organisationnelle (Score 0-100)
     printf("\n======================================================================\n");
     printf(" 📑 RAPPORT D'AUDIT DE SANTÉ ORGANISATIONNELLE (ONA C ENGINE)\n");

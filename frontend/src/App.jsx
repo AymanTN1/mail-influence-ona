@@ -8,7 +8,8 @@ export default function App() {
   const [simulatedPropagation, setSimulatedPropagation] = useState(null);
   const [resignationImpact, setResignationImpact] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
-  const [activeTab, setActiveTab] = useState('bridges'); // 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [activeTab, setActiveTab] = useState('tribes'); // 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
 
   // Mode secours (Mock data)
   const mockData = {
@@ -37,24 +38,24 @@ export default function App() {
     busFactor: [
       { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 527.7, outFlux: 490.7, overloadScore: 1156.6, isCritical: true },
       { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', inFlux: 482.2, outFlux: 471.3, overloadScore: 1052.3, isCritical: true },
-      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 488.9, outFlux: 504.4, overloadScore: 1070.3, isCritical: true },
-      { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', inFlux: 472.0, outFlux: 488.2, overloadScore: 1027.0, isCritical: true },
-      { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', inFlux: 470.3, outFlux: 425.6, overloadScore: 1028.6, isCritical: true }
+      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 488.9, outFlux: 504.4, overloadScore: 1070.3, isCritical: true }
     ],
     boundarySpanners: [
       { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', betweenness: 24.5, normalizedBetweenness: 13.5, externalDeptsCount: 5, bridgeScore: 38.4, isKeyBroker: true },
-      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', betweenness: 18.0, normalizedBetweenness: 9.8, externalDeptsCount: 4, bridgeScore: 29.2, isKeyBroker: true },
-      { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', betweenness: 14.0, normalizedBetweenness: 7.7, externalDeptsCount: 4, bridgeScore: 23.1, isKeyBroker: true },
-      { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', betweenness: 12.5, normalizedBetweenness: 6.8, externalDeptsCount: 3, bridgeScore: 18.7, isKeyBroker: false },
-      { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', betweenness: 11.0, normalizedBetweenness: 6.0, externalDeptsCount: 3, bridgeScore: 16.5, isKeyBroker: false }
+      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', betweenness: 18.0, normalizedBetweenness: 9.8, externalDeptsCount: 4, bridgeScore: 29.2, isKeyBroker: true }
+    ],
+    communities: [
+      { id: 0, label: 'Tribu 1 (Engineering & Tech Core)', memberCount: 5, dominantDept: 'Engineering', internalFlux: 450.0, externalFlux: 180.0, cohesionScore: 71.4, memberIds: [0, 2, 7, 8, 11] },
+      { id: 1, label: 'Tribu 2 (Executive, Product & Legal)', memberCount: 6, dominantDept: 'Product', internalFlux: 520.0, externalFlux: 210.0, cohesionScore: 71.2, memberIds: [1, 4, 5, 6, 10, 13] },
+      { id: 2, label: 'Tribu 3 (People & Growth)', memberCount: 4, dominantDept: 'HR', internalFlux: 310.0, externalFlux: 140.0, cohesionScore: 68.9, memberIds: [3, 9, 12, 14] }
     ],
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.33,
-      pageRankTimeMs: 0.03,
-      totalTimeMs: 1.48
+      parseTimeMs: 1.09,
+      pageRankTimeMs: 0.12,
+      totalTimeMs: 1.31
     },
     auditReport: {
       healthScore: 64.0,
@@ -91,6 +92,7 @@ export default function App() {
   const benchmark = currentData.benchmark || mockData.benchmark;
   const auditReport = currentData.auditReport || mockData.auditReport;
   const boundarySpanners = currentData.boundarySpanners || mockData.boundarySpanners;
+  const communities = currentData.communities || mockData.communities;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -114,6 +116,11 @@ export default function App() {
       case 'Design': return '#8b5cf6';
       default: return '#06b6d4';
     }
+  };
+
+  const getCommunityColor = (commId) => {
+    const colors = ['#38bdf8', '#a855f7', '#34d399', '#f59e0b', '#ec4899', '#6366f1'];
+    return colors[commId % colors.length];
   };
 
   const getNodePos = (idx, total) => {
@@ -167,48 +174,112 @@ export default function App() {
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Intelligence Réseau & Théorie des Graphes en C
+            Intelligence Réseau & Détection de Communautés en C
           </p>
         </div>
 
-        {/* 5 Navigation Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        {/* 6 Navigation Tabs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button 
+            className={`tab-btn ${activeTab === 'tribes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tribes')}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
+          >
+            🔮 Tribus
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`}
             onClick={() => setActiveTab('bridges')}
-            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
           >
             🌉 Ponts
           </button>
           <button 
             className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
             onClick={() => setActiveTab('audit')}
-            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
           >
             📑 Audit
           </button>
           <button 
             className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
-            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
           >
             🏆 Leaders
           </button>
           <button 
             className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
             onClick={() => setActiveTab('busfactor')}
-            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
           >
             ⚠️ Risque
           </button>
           <button 
             className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
             onClick={() => setActiveTab('silos')}
-            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+            style={{ fontSize: '0.65rem', padding: '6px 1px' }}
           >
             🏢 Silos
           </button>
         </div>
+
+        {/* Tab 0: Tribus & Communautés Informelles (LPA Algorithm in C) */}
+        {activeTab === 'tribes' && communities && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#38bdf8' }}>Tribus Informelles (LPA)</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{communities.length} clans détectés</span>
+            </div>
+            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
+              {communities.map((comm, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setSelectedCommunity(selectedCommunity === comm.id ? null : comm.id);
+                    setSelectedDept(null);
+                  }}
+                  style={{
+                    background: selectedCommunity === comm.id ? '#1e293b' : 'var(--card-bg)',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    border: selectedCommunity === comm.id ? `1px solid ${getCommunityColor(comm.id)}` : '1px solid #374151',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.8rem', color: getCommunityColor(comm.id) }}>
+                      {comm.label}
+                    </span>
+                    <span style={{
+                      fontSize: '0.62rem',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: '#064e3b',
+                      color: '#6ee7b7',
+                      fontWeight: 600
+                    }}>
+                      {comm.memberCount} membres
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', background: '#374151', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
+                    <div style={{
+                      width: `${Math.min(100, comm.cohesionScore)}%`,
+                      height: '100%',
+                      background: getCommunityColor(comm.id),
+                      borderRadius: '2px'
+                    }} />
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Interne: <strong>{comm.internalFlux.toFixed(0)}</strong></span>
+                    <span>Cohésion: <strong style={{ color: '#38bdf8' }}>{comm.cohesionScore.toFixed(1)}%</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
         {activeTab === 'bridges' && boundarySpanners && (
@@ -223,7 +294,7 @@ export default function App() {
                 return (
                   <div
                     key={idx}
-                    onClick={() => { setSelectedNode(nodeObj); setSelectedDept(null); }}
+                    onClick={() => { setSelectedNode(nodeObj); setSelectedDept(null); setSelectedCommunity(null); }}
                     style={{
                       background: selectedNode?.id === item.nodeId ? '#1e293b' : 'var(--card-bg)',
                       padding: '8px 10px',
@@ -260,7 +331,6 @@ export default function App() {
         {/* Tab 2: Audit de Santé Organisationnelle (Score 0-100) */}
         {activeTab === 'audit' && auditReport && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '290px', overflowY: 'auto' }}>
-            {/* Score Banner */}
             <div style={{
               background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
               padding: '10px 12px',
@@ -286,7 +356,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* Sub-scores breakdown */}
             <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Densité Globale:</span>
@@ -306,7 +375,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Recommendations */}
             <div style={{ background: '#111827', padding: '10px', borderRadius: '8px', border: '1px solid #374151' }}>
               <h5 style={{ margin: '0 0 4px 0', color: '#f59e0b', fontSize: '0.74rem' }}>💡 Recommandations RH & Management</h5>
               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.68rem', color: '#d1d5db', display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -332,7 +400,7 @@ export default function App() {
                 .map((item, idx) => (
                   <div
                     key={item.id}
-                    onClick={() => { setSelectedNode(item); setSelectedDept(null); }}
+                    onClick={() => { setSelectedNode(item); setSelectedDept(null); setSelectedCommunity(null); }}
                     style={{
                       background: selectedNode?.id === item.id ? '#1e293b' : 'var(--card-bg)',
                       padding: '8px 12px',
@@ -368,7 +436,7 @@ export default function App() {
                 return (
                   <div
                     key={idx}
-                    onClick={() => { setSelectedNode(nodeObj); setSelectedDept(null); }}
+                    onClick={() => { setSelectedNode(nodeObj); setSelectedDept(null); setSelectedCommunity(null); }}
                     style={{
                       background: selectedNode?.id === item.nodeId ? '#1e293b' : 'var(--card-bg)',
                       padding: '8px 12px',
@@ -413,7 +481,7 @@ export default function App() {
               {silosList.map((silo, idx) => (
                 <div 
                   key={idx}
-                  onClick={() => setSelectedDept(selectedDept === silo.dept ? null : silo.dept)}
+                  onClick={() => { setSelectedDept(selectedDept === silo.dept ? null : silo.dept); setSelectedCommunity(null); }}
                   style={{
                     background: selectedDept === silo.dept ? '#1f2937' : '#0b0f19',
                     padding: '8px 10px',
@@ -552,7 +620,9 @@ export default function App() {
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {selectedDept ? `Filtrage actif sur : ${selectedDept}` : 'Cliquez sur un collaborateur ou un onglet pour analyser les flux et les connecteurs.'}
+              {selectedCommunity !== null ? `Filtrage actif sur la communauté informelle : Tribu ${selectedCommunity + 1}` : 
+               selectedDept ? `Filtrage actif sur : ${selectedDept}` : 
+               'Cliquez sur une tribu ou un collaborateur pour analyser les clans et les flux d\'influence.'}
             </p>
           </div>
 
@@ -585,7 +655,7 @@ export default function App() {
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
               </marker>
               <marker id="arrow-highlight" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#c084fc" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
               </marker>
             </defs>
 
@@ -599,8 +669,14 @@ export default function App() {
               const tgtNode = currentData.nodes[edge.target];
               const isInternal = srcNode?.dept === tgtNode?.dept;
 
+              const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
+              const isCommunityEdge = activeCommunityObj && 
+                activeCommunityObj.memberIds?.includes(edge.source) && 
+                activeCommunityObj.memberIds?.includes(edge.target);
+
               const isHighlighted = (selectedNode && (selectedNode.id === edge.source || selectedNode.id === edge.target)) ||
-                                    (selectedDept && (srcNode?.dept === selectedDept || tgtNode?.dept === selectedDept));
+                                    (selectedDept && (srcNode?.dept === selectedDept || tgtNode?.dept === selectedDept)) ||
+                                    isCommunityEdge;
 
               return (
                 <line
@@ -609,11 +685,11 @@ export default function App() {
                   y1={sourcePos.y}
                   x2={targetPos.x}
                   y2={targetPos.y}
-                  stroke={isHighlighted ? (isInternal ? '#3b82f6' : '#c084fc') : '#334155'}
+                  stroke={isHighlighted ? (isCommunityEdge ? getCommunityColor(selectedCommunity) : (isInternal ? '#3b82f6' : '#38bdf8')) : '#334155'}
                   strokeWidth={edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5}
                   strokeDasharray={isInternal ? 'none' : '4,2'}
                   markerEnd={isHighlighted ? "url(#arrow-highlight)" : "url(#arrow)"}
-                  opacity={selectedNode || selectedDept ? (isHighlighted ? 0.95 : 0.1) : 0.65}
+                  opacity={selectedNode || selectedDept || selectedCommunity !== null ? (isHighlighted ? 0.95 : 0.08) : 0.65}
                   style={{ transition: 'all 0.2s ease' }}
                 />
               );
@@ -623,7 +699,14 @@ export default function App() {
             {currentData.nodes.map((node, idx) => {
               const totalNodes = currentData.nodes.length;
               const pos = getNodePos(idx, totalNodes);
-              const isSelected = selectedNode?.id === node.id || (selectedDept && node.dept === selectedDept);
+
+              const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
+              const isNodeInCommunity = activeCommunityObj?.memberIds?.includes(node.id);
+
+              const isSelected = selectedNode?.id === node.id || 
+                                 (selectedDept && node.dept === selectedDept) ||
+                                 isNodeInCommunity;
+
               const radius = 20 + (node.pageRank || 0) * 45;
               const deptColor = getDeptColor(node.dept);
               const isCriticalBusFactor = busFactorList.find(b => b.nodeId === node.id)?.isCritical;
@@ -663,7 +746,7 @@ export default function App() {
                   <circle
                     r={radius}
                     fill={isSelected ? '#1e293b' : '#111827'}
-                    stroke={isSelected ? '#c084fc' : deptColor}
+                    stroke={isSelected ? (selectedCommunity !== null ? getCommunityColor(selectedCommunity) : '#38bdf8') : deptColor}
                     strokeWidth={isSelected ? 3.5 : 2}
                     style={{ transition: 'all 0.2s ease' }}
                   />

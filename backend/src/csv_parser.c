@@ -33,15 +33,47 @@ void generate_enterprise_mock_dataset(const char* filepath, int num_records) {
 
     int total_employees = sizeof(names) / sizeof(names[0]);
 
+    // Définition de 3 Tribus Informelles réalistes
+    int tribe1[] = {0, 2, 5, 7, 9};       // Tech & Product Innovation
+    int tribe2[] = {1, 6, 10, 12, 13, 14}; // Executive, Finance & Legal
+    int tribe3[] = {3, 4, 8, 11};         // People, HR & Sales Growth
+
+    int s1 = sizeof(tribe1) / sizeof(tribe1[0]);
+    int s2 = sizeof(tribe2) / sizeof(tribe2[0]);
+    int s3 = sizeof(tribe3) / sizeof(tribe3[0]);
+
     srand((unsigned int)time(NULL));
     for (int i = 0; i < num_records; i++) {
-        int src = rand() % total_employees;
-        int tgt = rand() % total_employees;
-        while (tgt == src) {
-            tgt = rand() % total_employees;
-        }
+        int src, tgt;
+        double weight;
 
-        double weight = 1.0 + ((rand() % 40) / 10.0);
+        // 75% d'échanges intra-communautaires forts, 25% de ponts transversaux
+        int r = rand() % 100;
+        if (r < 35) {
+            // Échange au sein de la Tribu 1
+            src = tribe1[rand() % s1];
+            tgt = tribe1[rand() % s1];
+            while (tgt == src) tgt = tribe1[rand() % s1];
+            weight = 2.5 + ((rand() % 35) / 10.0);
+        } else if (r < 65) {
+            // Échange au sein de la Tribu 2
+            src = tribe2[rand() % s2];
+            tgt = tribe2[rand() % s2];
+            while (tgt == src) tgt = tribe2[rand() % s2];
+            weight = 2.5 + ((rand() % 35) / 10.0);
+        } else if (r < 85) {
+            // Échange au sein de la Tribu 3
+            src = tribe3[rand() % s3];
+            tgt = tribe3[rand() % s3];
+            while (tgt == src) tgt = tribe3[rand() % s3];
+            weight = 2.5 + ((rand() % 35) / 10.0);
+        } else {
+            // Ponts transversaux inter-tribus
+            src = rand() % total_employees;
+            tgt = rand() % total_employees;
+            while (tgt == src) tgt = rand() % total_employees;
+            weight = 1.0 + ((rand() % 25) / 10.0);
+        }
 
         fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%s,%.2f\n",
             emails[src], names[src], depts[src], roles[src],

@@ -78,6 +78,26 @@ typedef struct {
     int critical_bridges_count;
 } BoundarySpannerReport;
 
+// Structure d'une Communauté / Tribu Informelle Détectée (LPA / Modularity)
+typedef struct {
+    int id;
+    char label[MAX_STR];
+    int member_ids[MAX_MEMBERS];
+    int member_count;
+    double internal_flux;
+    double external_flux;
+    double cohesion_score; // 0.0% à 100.0%
+    char dominant_dept[MAX_STR];
+} Community;
+
+// Rapport Global de Détection des Communautés
+typedef struct {
+    Community communities[MAX_DEPTS];
+    int num_communities;
+    double modularity_score; // Score de modularité de Newman Q
+    int node_community[MAX_MEMBERS]; // node_id -> community_id
+} CommunityReport;
+
 // Calcul de la Centralité PageRank (Power Iteration)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor);
 
@@ -95,6 +115,9 @@ AuditReport generate_ona_audit_report(Graph* g);
 
 // Détection des Ponts Informels & Nœuds Passerelles (Algorithme de Brandes O(V*E))
 BoundarySpannerReport calculate_boundary_spanners(Graph* g);
+
+// Détection des Tribus & Communautés Informelles (Label Propagation Algorithm - LPA en C)
+CommunityReport calculate_graph_communities(Graph* g);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);
