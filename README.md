@@ -9,13 +9,14 @@ Elle transforme le flux d'emails d'entreprise en un **Graphe d'Influence et de C
 ## 🎯 Pourquoi le Backend en C ?
 Le moteur backend a été conçu de zéro en C pur pour garantir une **complexité minimale**, une **performance maximale** et un contrôle total sur les structures de données bas niveau (pointeurs, allocations dynamiques, gestion de la mémoire) :
 
-* **🌪️ Crash Test & Départs en Cascade (*Algorithme de Tarjan DFS avec Stack en C*) :**
-  * Simulation de crises et départs simultanés de collaborateurs clés (Tech Leads, Directeurs).
-  * Détection en temps linéaire $O(V + E)$ de la scission du réseau en composantes fortement connexes (SCC) et mesure de l'indice de fragmentation systémique.
+* **📈 Analyse Temporelle & Vélocité des Échanges (*Temporal ONA & Dérivée $\Delta \text{PageRank}$ en C*) :**
+  * Fenêtrage glissant (*Sliding Windows*) comparant l'état du réseau avant ($T_1$) et après ($T_2$) une réorganisation ou fusion.
+  * Détection automatique des **Leaders Émergents** ($\Delta PR > +10\%$), des collaborateurs en déclin et mesure du ROI de la réorganisation ($\Delta$ Connectivité transversale).
+* **🌪️ Crash Test & Départs en Cascade (*Algorithme de Tarjan DFS avec Stack en C*) :** Simulation de crises et départs simultanés de collaborateurs clés avec mesure de l'indice de fragmentation systémique ($O(V + E)$).
 * **🔮 Détection des "Tribus & Communautés Informelles" (*Label Propagation Algorithm - LPA en C*) :** Détection automatique des sous-groupes et clans réels qui collaborent au quotidien au-delà de l'organigramme hiérarchique officiel, avec calcul des flux internes/externes et du taux de cohésion.
 * **🌉 Détection des "Ponts Informels" & Nœuds Passerelles (*Boundary Spanners*) :** Implémentation de l'**Algorithme de Brandes ($O(V \cdot E)$)** combinant une **File FIFO (`Queue`)** et une **Pile LIFO (`Stack`)** pour le calcul exact de la centralité d'intermédiarité.
 * **⚡ Algorithmes Haute Performance & Optimisations SIMD / C11 :**
-  * **PageRank Ultra-Rapide (Power Iteration & Early Stopping $\epsilon=10^{-6}$) :** Calcul du PageRank vectorisé en **0.23 milliseconde** pour 2 500 arêtes.
+  * **PageRank Ultra-Rapide (Power Iteration & Early Stopping $\epsilon=10^{-6}$) :** Calcul du PageRank vectorisé en **0.21 milliseconde** pour 2 500 arêtes.
   * **Matrice de Réciprocité en $O(E)$ :** Remplacement des boucles quadratiques $O(E^2)$ par une matrice d'adjacence booléenne pour un calcul instantané en microsecondes.
   * **Indexation Silos en $O(1)$ :** Pré-mapping des identifiants de département entiers (`dept_id`) éliminant 100% des appels `strcmp` dans les boucles d'arêtes.
   * **Indexation Hash Table `djb2` :** Résolution en temps constant $O(1)$ des adresses emails.
@@ -29,13 +30,14 @@ Le moteur backend a été conçu de zéro en C pur pour garantir une **complexit
 
 ## 📊 Benchmark de Performance (Moteur C11 Optimisé)
 Sur un dataset de **2 500 logs d'emails d'entreprise** :
-* **Parsing & Indexation Hash Table :** ~1.23 ms
-* **Calcul PageRank (Power Iteration Optimisé) :** **0.23 ms**
-* **Détection des Communautés (LPA en C) :** ~0.05 ms
-* **Algorithme de Tarjan & Crash Test (DFS + Stack) :** ~0.03 ms
-* **Calcul Brandes Betweenness & Boundary Spanners :** ~0.04 ms
-* **Génération du Rapport d'Audit & Santé ONA :** ~0.03 ms
-* **Temps Total d'Exécution :** **< 1.60 ms**
+* **Parsing & Indexation Hash Table :** ~1.00 ms
+* **Calcul PageRank (Power Iteration Optimisé) :** **0.21 ms**
+* **Analyse Temporelle & Sliding Windows (2 fenêtres) :** ~0.08 ms
+* **Détection des Communautés (LPA en C) :** ~0.04 ms
+* **Algorithme de Tarjan & Crash Test (DFS + Stack) :** ~0.02 ms
+* **Calcul Brandes Betweenness & Boundary Spanners :** ~0.03 ms
+* **Génération du Rapport d'Audit & Santé ONA :** ~0.02 ms
+* **Temps Total d'Exécution :** **< 1.40 ms**
 
 ---
 

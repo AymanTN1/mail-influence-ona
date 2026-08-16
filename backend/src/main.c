@@ -93,6 +93,19 @@ int main(int argc, char* argv[]) {
            crash.fragmentation_index, crash.total_components, crash.risk_level);
     printf("  - Diagnostic: %s\n", crash.impact_summary);
 
+    // 9. Analyse Temporelle & Vélocité (Sliding Window & Dérivée Delta PageRank)
+    printf("\n📈 --- Analyse Temporelle & Vélocité (Delta PageRank & Dynamique C) ---\n");
+    TemporalReport temporal = calculate_temporal_ona(g);
+    printf("  - Évolution Santé: %.1f -> %.1f (%+.1f pts) | Connectivité Transversale: %+.1f%%\n",
+           temporal.health_score_t1, temporal.health_score_t2, temporal.delta_health_score, temporal.delta_cross_dept);
+    printf("  - Leaders Émergents: %d collaborateurs | Déclins: %d collaborateurs\n",
+           temporal.rising_leaders_count, temporal.declining_nodes_count);
+    for (int m = 0; m < ((temporal.count > 4) ? 4 : temporal.count); m++) {
+        TemporalNodeMetric* tnm = &temporal.metrics[m];
+        printf("    * %-15s | %-12s | PR T1: %.4f -> T2: %.4f (%+5.1f%%) | %s\n",
+               tnm->name, tnm->dept, tnm->pagerank_t1, tnm->pagerank_t2, tnm->delta_growth_pct, tnm->trend);
+    }
+
     // 6. Rapport d'Audit Global de Santé Organisationnelle (Score 0-100)
     printf("\n======================================================================\n");
     printf(" 📑 RAPPORT D'AUDIT DE SANTÉ ORGANISATIONNELLE (ONA C ENGINE)\n");

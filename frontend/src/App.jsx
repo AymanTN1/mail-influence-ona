@@ -9,8 +9,9 @@ export default function App() {
   const [resignationImpact, setResignationImpact] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
-  const [activeTab, setActiveTab] = useState('crashtest'); // 'crashtest' | 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
-  const [customResignedNodes, setCustomResignedNodes] = useState([5, 6]); // default 2 nodes
+  const [activeTab, setActiveTab] = useState('velocity'); // 'velocity' | 'crashtest' | 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
+  const [timeView, setTimeView] = useState('delta'); // 't1' | 't2' | 'delta'
+  const [customResignedNodes, setCustomResignedNodes] = useState([5, 6]);
 
   // Mode secours (Mock data)
   const mockData = {
@@ -77,13 +78,31 @@ export default function App() {
         { sccId: 2, memberCount: 2, dominantDept: 'Product', isIsolated: true, memberIds: [10, 12] }
       ]
     },
+    temporalReport: {
+      healthScoreT1: 58.5,
+      healthScoreT2: 64.0,
+      deltaHealthScore: 5.5,
+      crossDeptT1: 82.0,
+      crossDeptT2: 89.5,
+      deltaCrossDept: 7.5,
+      risingLeadersCount: 5,
+      decliningNodesCount: 3,
+      executiveSummary: 'Évolution ONA : 5 leaders émergents détectés. Variation de connectivité transversale : +7.5% (Score Santé : +5.5 pts).',
+      metrics: [
+        { nodeId: 4, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', pageRankT1: 0.058, pageRankT2: 0.071, deltaPageRank: 0.013, deltaGrowthPct: 22.4, inFluxT1: 390.0, inFluxT2: 431.2, deltaFlux: 41.2, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 11, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', pageRankT1: 0.061, pageRankT2: 0.073, deltaPageRank: 0.012, deltaGrowthPct: 19.7, inFluxT1: 380.0, inFluxT2: 438.9, deltaFlux: 58.9, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', pageRankT1: 0.060, pageRankT2: 0.070, deltaPageRank: 0.010, deltaGrowthPct: 16.7, inFluxT1: 410.0, inFluxT2: 482.7, deltaFlux: 72.7, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 0, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', pageRankT1: 0.063, pageRankT2: 0.071, deltaPageRank: 0.008, deltaGrowthPct: 12.7, inFluxT1: 270.0, inFluxT2: 327.8, deltaFlux: 57.8, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 9, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', pageRankT1: 0.072, pageRankT2: 0.064, deltaPageRank: -0.008, deltaGrowthPct: -11.1, inFluxT1: 320.0, inFluxT2: 275.3, deltaFlux: -44.7, trend: '📉 EN BAISSE' }
+      ]
+    },
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.37,
+      parseTimeMs: 1.23,
       pageRankTimeMs: 0.23,
-      totalTimeMs: 1.75
+      totalTimeMs: 1.55
     },
     auditReport: {
       healthScore: 61.2,
@@ -125,6 +144,7 @@ export default function App() {
   const boundarySpanners = currentData.boundarySpanners || mockData.boundarySpanners;
   const communities = currentData.communities || mockData.communities;
   const cascading = currentData.cascadingSimulation || mockData.cascadingSimulation;
+  const temporal = currentData.temporalReport || mockData.temporalReport;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -214,67 +234,200 @@ export default function App() {
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Intelligence Réseau & Théorie des Graphes en C
+            Intelligence Réseau & Analyse Temporelle en C
           </p>
         </div>
 
-        {/* 7 Navigation Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        {/* 8 Navigation Tabs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button 
+            className={`tab-btn ${activeTab === 'velocity' ? 'active' : ''}`}
+            onClick={() => setActiveTab('velocity')}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
+          >
+            📈 Vélocité
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'crashtest' ? 'active' : ''}`}
             onClick={() => setActiveTab('crashtest')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             🌪️ Crash
           </button>
           <button 
             className={`tab-btn ${activeTab === 'tribes' ? 'active' : ''}`}
             onClick={() => setActiveTab('tribes')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             🔮 Tribus
           </button>
           <button 
             className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`}
             onClick={() => setActiveTab('bridges')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             🌉 Ponts
           </button>
           <button 
             className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
             onClick={() => setActiveTab('audit')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             📑 Audit
           </button>
           <button 
             className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             🏆 Leaders
           </button>
           <button 
             className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
             onClick={() => setActiveTab('busfactor')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             ⚠️ Risque
           </button>
           <button 
             className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
             onClick={() => setActiveTab('silos')}
-            style={{ fontSize: '0.62rem', padding: '5px 1px' }}
+            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
           >
             🏢 Silos
           </button>
         </div>
 
-        {/* Tab 0: Crash Test & Départs en Cascade (Tarjan SCC) */}
+        {/* Tab 0: Vélocité & Analyse Temporelle (Sliding Window & Delta PageRank) */}
+        {activeTab === 'velocity' && temporal && (
+          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
+            {/* ROI Reorganisation Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, #064e3b 0%, #0f172a 100%)',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #10b981'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                  ROI Réorganisation & Dynamique
+                </span>
+                <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: '#047857', color: '#fff', fontWeight: 700 }}>
+                  {temporal.risingLeadersCount} Leaders Émergents
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '4px' }}>
+                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399' }}>
+                  {temporal.deltaCrossDept >= 0 ? `+${temporal.deltaCrossDept.toFixed(1)}%` : `${temporal.deltaCrossDept.toFixed(1)}%`}
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#d1fae5' }}>
+                  Connectivité Transversale
+                </span>
+              </div>
+              <p style={{ fontSize: '0.68rem', color: '#d1d5db', margin: '4px 0 0 0', lineHeight: 1.3 }}>
+                {temporal.executiveSummary}
+              </p>
+            </div>
+
+            {/* Time View Switcher */}
+            <div style={{ display: 'flex', gap: '4px', background: '#0b0f19', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <button
+                onClick={() => setTimeView('t1')}
+                style={{
+                  flex: 1,
+                  padding: '4px',
+                  fontSize: '0.65rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: timeView === 't1' ? '#1e293b' : 'transparent',
+                  color: timeView === 't1' ? '#38bdf8' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                T1: Avant
+              </button>
+              <button
+                onClick={() => setTimeView('t2')}
+                style={{
+                  flex: 1,
+                  padding: '4px',
+                  fontSize: '0.65rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: timeView === 't2' ? '#1e293b' : 'transparent',
+                  color: timeView === 't2' ? '#38bdf8' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                T2: Après
+              </button>
+              <button
+                onClick={() => setTimeView('delta')}
+                style={{
+                  flex: 1,
+                  padding: '4px',
+                  fontSize: '0.65rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: timeView === 'delta' ? '#065f46' : 'transparent',
+                  color: timeView === 'delta' ? '#34d399' : '#9ca3af',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Δ Dérivée
+              </button>
+            </div>
+
+            {/* List of Dynamic Influence Metrics */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {temporal.metrics
+                .slice()
+                .sort((a, b) => b.deltaGrowthPct - a.deltaGrowthPct)
+                .map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      const nodeObj = currentData.nodes.find(n => n.id === item.nodeId);
+                      if (nodeObj) setSelectedNode(nodeObj);
+                    }}
+                    style={{
+                      background: selectedNode?.id === item.nodeId ? '#1e293b' : 'var(--card-bg)',
+                      padding: '7px 9px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      border: selectedNode?.id === item.nodeId ? '1px solid #10b981' : '1px solid #374151',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.78rem' }}>{item.name}</span>
+                      <span style={{
+                        fontSize: '0.62rem',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        background: item.deltaGrowthPct >= 5.0 ? '#064e3b' : (item.deltaGrowthPct <= -5.0 ? '#7f1d1d' : '#1e293b'),
+                        color: item.deltaGrowthPct >= 5.0 ? '#6ee7b7' : (item.deltaGrowthPct <= -5.0 ? '#fca5a5' : '#9ca3af'),
+                        fontWeight: 700
+                      }}>
+                        {item.deltaGrowthPct >= 0 ? `+${item.deltaGrowthPct.toFixed(1)}%` : `${item.deltaGrowthPct.toFixed(1)}%`}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>PR: {item.pageRankT1.toFixed(3)} → <strong>{item.pageRankT2.toFixed(3)}</strong></span>
+                      <span style={{ color: item.deltaGrowthPct >= 5.0 ? '#34d399' : '#9ca3af', fontWeight: 600 }}>{item.trend}</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 1: Crash Test & Départs en Cascade (Tarjan SCC) */}
         {activeTab === 'crashtest' && cascading && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
-            {/* Crash Test Gauge Banner */}
             <div style={{
               background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
               padding: '10px 12px',
@@ -309,10 +462,9 @@ export default function App() {
               </p>
             </div>
 
-            {/* Metrics Breakdown */}
             <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Départs Similés:</span>
+                <span style={{ color: 'var(--text-muted)' }}>Départs Simulés:</span>
                 <strong style={{ color: '#ef4444' }}>{customResignedNodes.length} personnes</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
@@ -325,7 +477,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Interactive Resignation Toggle List */}
             <div style={{ background: '#111827', padding: '8px 10px', borderRadius: '8px', border: '1px solid #374151' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fca5a5', display: 'block', marginBottom: '6px' }}>
                 Simuler le départ de collaborateurs :
@@ -362,7 +513,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Tribus & Communautés Informelles (LPA Algorithm in C) */}
+        {/* Tab 2: Tribus & Communautés Informelles (LPA Algorithm in C) */}
         {activeTab === 'tribes' && communities && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -419,7 +570,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
+        {/* Tab 3: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
         {activeTab === 'bridges' && boundarySpanners && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -466,7 +617,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 3: Audit de Santé Organisationnelle (Score 0-100) */}
+        {/* Tab 4: Audit de Santé Organisationnelle (Score 0-100) */}
         {activeTab === 'audit' && auditReport && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '290px', overflowY: 'auto' }}>
             <div style={{
@@ -524,7 +675,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 4: Leaders Informels (PageRank) */}
+        {/* Tab 5: Leaders Informels (PageRank) */}
         {activeTab === 'influence' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -561,7 +712,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 5: Bus Factor & Risque de Surcharge (Max-Heap C) */}
+        {/* Tab 6: Bus Factor & Risque de Surcharge (Max-Heap C) */}
         {activeTab === 'busfactor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -608,7 +759,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 6: Silos Organisationnels & Isolation (Homophily C) */}
+        {/* Tab 7: Silos Organisationnels & Isolation (Homophily C) */}
         {activeTab === 'silos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -758,7 +909,8 @@ export default function App() {
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {activeTab === 'crashtest' ? `Mode Crash Test : ${customResignedNodes.length} départs simulés (Composantes de Tarjan).` :
+              {activeTab === 'velocity' ? `Mode Analyse Temporelle (Vue: ${timeView.toUpperCase()}) : Leaders émergents et dérivée d'influence.` :
+               activeTab === 'crashtest' ? `Mode Crash Test : ${customResignedNodes.length} départs simulés (Composantes de Tarjan).` :
                selectedCommunity !== null ? `Filtrage actif sur la communauté informelle : Tribu ${selectedCommunity + 1}` : 
                selectedDept ? `Filtrage actif sur : ${selectedDept}` : 
                'Cliquez sur une tribu ou un collaborateur pour analyser les clans et les flux d\'influence.'}
@@ -847,11 +999,20 @@ export default function App() {
               const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
               const isNodeInCommunity = activeCommunityObj?.memberIds?.includes(node.id);
 
+              const temporalMetric = temporal?.metrics?.find(m => m.nodeId === node.id);
+              const isRisingLeader = temporalMetric && temporalMetric.deltaGrowthPct >= 5.0;
+
               const isSelected = selectedNode?.id === node.id || 
                                  (selectedDept && node.dept === selectedDept) ||
                                  isNodeInCommunity;
 
-              const radius = 20 + (node.pageRank || 0) * 45;
+              let nodePageRank = node.pageRank || 0.06;
+              if (activeTab === 'velocity' && temporalMetric) {
+                if (timeView === 't1') nodePageRank = temporalMetric.pageRankT1;
+                else if (timeView === 't2') nodePageRank = temporalMetric.pageRankT2;
+              }
+
+              const radius = 20 + nodePageRank * 45;
               const deptColor = getDeptColor(node.dept);
               const isCriticalBusFactor = busFactorList.find(b => b.nodeId === node.id)?.isCritical;
               const isKeyBridge = boundarySpanners.find(b => b.nodeId === node.id)?.isKeyBroker;
@@ -870,8 +1031,20 @@ export default function App() {
                   }} 
                   style={{ cursor: 'pointer' }}
                 >
+                  {/* Glowing Green ring for Rising Leaders in Velocity Mode */}
+                  {activeTab === 'velocity' && isRisingLeader && (
+                    <circle
+                      r={radius + 8}
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="2.0"
+                      strokeDasharray="3,3"
+                      opacity="0.9"
+                    />
+                  )}
+
                   {/* Warning pulse ring for critical Bus Factor */}
-                  {isCriticalBusFactor && !isResigned && (
+                  {isCriticalBusFactor && !isResigned && activeTab !== 'velocity' && (
                     <circle
                       r={radius + 6}
                       fill="none"
@@ -883,7 +1056,7 @@ export default function App() {
                   )}
 
                   {/* Purple aura ring for Key Boundary Spanners / Brokers */}
-                  {isKeyBridge && !isResigned && (
+                  {isKeyBridge && !isResigned && activeTab !== 'velocity' && (
                     <circle
                       r={radius + 9}
                       fill="none"
@@ -897,8 +1070,8 @@ export default function App() {
                   <circle
                     r={radius}
                     fill={isResigned ? '#3f1010' : (isSelected ? '#1e293b' : '#111827')}
-                    stroke={isResigned ? '#ef4444' : (isSelected ? (selectedCommunity !== null ? getCommunityColor(selectedCommunity) : '#38bdf8') : deptColor)}
-                    strokeWidth={isResigned ? 3 : (isSelected ? 3.5 : 2)}
+                    stroke={isResigned ? '#ef4444' : (isSelected ? (selectedCommunity !== null ? getCommunityColor(selectedCommunity) : '#38bdf8') : (activeTab === 'velocity' && isRisingLeader ? '#22c55e' : deptColor))}
+                    strokeWidth={isSelected ? 3.5 : (activeTab === 'velocity' && isRisingLeader ? 3 : 2)}
                     strokeDasharray={isResigned ? '3,3' : 'none'}
                     opacity={isResigned ? 0.6 : 1.0}
                     style={{ transition: 'all 0.2s ease' }}

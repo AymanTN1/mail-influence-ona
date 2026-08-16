@@ -176,6 +176,34 @@ static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* benc
         offset += snprintf(response_body + offset, buf_size - offset, "]}%s\n",
             (c < cfr.total_components - 1 && c < MAX_DEPTS - 1) ? "," : "");
     }
+    offset += snprintf(response_body + offset, buf_size - offset, "    ]\n  },\n");
+
+    TemporalReport tr = calculate_temporal_ona(g);
+    offset += snprintf(response_body + offset, buf_size - offset, "  \"temporalReport\": {\n");
+    offset += snprintf(response_body + offset, buf_size - offset,
+        "    \"healthScoreT1\": %.1f,\n"
+        "    \"healthScoreT2\": %.1f,\n"
+        "    \"deltaHealthScore\": %.1f,\n"
+        "    \"crossDeptT1\": %.1f,\n"
+        "    \"crossDeptT2\": %.1f,\n"
+        "    \"deltaCrossDept\": %.1f,\n"
+        "    \"risingLeadersCount\": %d,\n"
+        "    \"decliningNodesCount\": %d,\n"
+        "    \"executiveSummary\": \"%s\",\n"
+        "    \"metrics\": [\n",
+        tr.health_score_t1, tr.health_score_t2, tr.delta_health_score,
+        tr.cross_dept_t1, tr.cross_dept_t2, tr.delta_cross_dept,
+        tr.rising_leaders_count, tr.declining_nodes_count, tr.executive_summary);
+
+    for (int m = 0; m < tr.count; m++) {
+        TemporalNodeMetric* tnm = &tr.metrics[m];
+        offset += snprintf(response_body + offset, buf_size - offset,
+            "      {\"nodeId\": %d, \"name\": \"%s\", \"dept\": \"%s\", \"role\": \"%s\", \"pageRankT1\": %.4f, \"pageRankT2\": %.4f, \"deltaPageRank\": %.4f, \"deltaGrowthPct\": %.1f, \"inFluxT1\": %.1f, \"inFluxT2\": %.1f, \"deltaFlux\": %.1f, \"trend\": \"%s\"}%s\n",
+            tnm->node_id, tnm->name, tnm->dept, tnm->role,
+            tnm->pagerank_t1, tnm->pagerank_t2, tnm->delta_pagerank, tnm->delta_growth_pct,
+            tnm->in_flux_t1, tnm->in_flux_t2, tnm->delta_flux, tnm->trend,
+            (m < tr.count - 1) ? "," : "");
+    }
     offset += snprintf(response_body + offset, buf_size - offset, "    ]\n  }\n}\n");
 
     int total_len = snprintf(full_response, buf_size + 1024,

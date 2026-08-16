@@ -981,3 +981,108 @@ CascadingFailureReport simulate_cascading_failure(Graph* g, const int* resigned_
 
     return report;
 }
+
+// Analyse Temporelle & Vélocité des Échanges (Sliding Window & Dérivée Delta PageRank en C)
+TemporalReport calculate_temporal_ona(Graph* g) {
+    TemporalReport report;
+    memset(&report, 0, sizeof(TemporalReport));
+
+    if (!g || g->num_nodes == 0 || g->num_edges < 2) return report;
+
+    int N = g->num_nodes;
+    int E = g->num_edges;
+    int mid = E / 2;
+
+    // 1. Initialiser les sous-graphes temporels T1 et T2
+    Graph* g_t1 = create_graph();
+    Graph* g_t2 = create_graph();
+    if (!g_t1 || !g_t2) {
+        if (g_t1) free_graph(g_t1);
+        if (g_t2) free_graph(g_t2);
+        return report;
+    }
+
+    for (int i = 0; i < N; i++) {
+        add_node(g_t1, g->nodes[i].name, g->nodes[i].email, g->nodes[i].dept, g->nodes[i].role);
+        add_node(g_t2, g->nodes[i].name, g->nodes[i].email, g->nodes[i].dept, g->nodes[i].role);
+    }
+
+    // Répartition temporelle (première moitié des logs vs seconde moitié)
+    for (int e = 0; e < mid; e++) {
+        add_edge(g_t1, g->edges[e].source, g->edges[e].target, g->edges[e].weight);
+    }
+    for (int e = mid; e < E; e++) {
+        add_edge(g_t2, g->edges[e].source, g->edges[e].target, g->edges[e].weight);
+    }
+
+    // 2. Calculer le PageRank pour chaque fenêtre temporelle
+    calculate_pagerank(g_t1, 20, 0.85);
+    calculate_pagerank(g_t2, 20, 0.85);
+
+    // 3. Calculer les flux entrants pour T1 et T2
+    double in_flux_t1[MAX_MEMBERS] = {0};
+    double in_flux_t2[MAX_MEMBERS] = {0};
+
+    for (int e = 0; e < g_t1->num_edges; e++) {
+        in_flux_t1[g_t1->edges[e].target] += g_t1->edges[e].weight;
+    }
+    for (int e = 0; e < g_t2->num_edges; e++) {
+        in_flux_t2[g_t2->edges[e].target] += g_t2->edges[e].weight;
+    }
+
+    // 4. Calcul des Dérivées d'Influence et Tendances
+    report.count = N;
+    for (int i = 0; i < N; i++) {
+        TemporalNodeMetric* m = &report.metrics[i];
+        m->node_id = g->nodes[i].id;
+        strncpy(m->name, g->nodes[i].name, MAX_STR - 1);
+        strncpy(m->dept, g->nodes[i].dept, MAX_STR - 1);
+        strncpy(m->role, g->nodes[i].role, MAX_STR - 1);
+
+        m->pagerank_t1 = g_t1->nodes[i].page_rank;
+        m->pagerank_t2 = g_t2->nodes[i].page_rank;
+        m->delta_pagerank = m->pagerank_t2 - m->pagerank_t1;
+
+        if (m->pagerank_t1 > 0.0) {
+            m->delta_growth_pct = (m->delta_pagerank / m->pagerank_t1) * 100.0;
+        } else {
+            m->delta_growth_pct = 0.0;
+        }
+
+        m->in_flux_t1 = in_flux_t1[i];
+        m->in_flux_t2 = in_flux_t2[i];
+        m->delta_flux = m->in_flux_t2 - m->in_flux_t1;
+
+        if (m->delta_growth_pct >= 5.0) {
+            strcpy(m->trend, "📈 LEADER ÉMERGENT");
+            report.rising_leaders_count++;
+        } else if (m->delta_growth_pct <= -5.0) {
+            strcpy(m->trend, "📉 EN BAISSE");
+            report.declining_nodes_count++;
+        } else {
+            strcpy(m->trend, "➡️ STABLE");
+        }
+    }
+
+    // 5. Évolution de la santé organisationnelle globale
+    AuditReport audit_t1 = generate_ona_audit_report(g_t1);
+    AuditReport audit_t2 = generate_ona_audit_report(g_t2);
+
+    report.health_score_t1 = audit_t1.health_score;
+    report.health_score_t2 = audit_t2.health_score;
+    report.delta_health_score = report.health_score_t2 - report.health_score_t1;
+
+    report.cross_dept_t1 = audit_t1.cross_dept_connectivity;
+    report.cross_dept_t2 = audit_t2.cross_dept_connectivity;
+    report.delta_cross_dept = report.cross_dept_t2 - report.cross_dept_t1;
+
+    snprintf(report.executive_summary, 256,
+        "Évolution ONA : %d leaders émergents détectés. Variation de connectivité transversale : %+.1f%% (Score Santé : %+.1f pts).",
+        report.rising_leaders_count, report.delta_cross_dept, report.delta_health_score);
+
+    // 6. Libération des sous-graphes
+    free_graph(g_t1);
+    free_graph(g_t2);
+
+    return report;
+}

@@ -121,6 +121,37 @@ typedef struct {
     char impact_summary[256];
 } CascadingFailureReport;
 
+// Structure d'une Métrique Temporelle d'un Employé (Dérivée de PageRank)
+typedef struct {
+    int node_id;
+    char name[MAX_STR];
+    char dept[MAX_STR];
+    char role[MAX_STR];
+    double pagerank_t1;
+    double pagerank_t2;
+    double delta_pagerank;     // PR_t2 - PR_t1
+    double delta_growth_pct;   // Taux de variation en %
+    double in_flux_t1;
+    double in_flux_t2;
+    double delta_flux;
+    char trend[24];            // "📈 EN FORTE HAUSSE", "📉 EN BAISSE", "➡️ STABLE"
+} TemporalNodeMetric;
+
+// Rapport Global d'Analyse Temporelle & Vélocité des Échanges
+typedef struct {
+    TemporalNodeMetric metrics[MAX_MEMBERS];
+    int count;
+    double health_score_t1;
+    double health_score_t2;
+    double delta_health_score;
+    double cross_dept_t1;
+    double cross_dept_t2;
+    double delta_cross_dept;
+    int rising_leaders_count;
+    int declining_nodes_count;
+    char executive_summary[256];
+} TemporalReport;
+
 // Calcul de la Centralité PageRank (Power Iteration)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor);
 
@@ -144,6 +175,9 @@ CommunityReport calculate_graph_communities(Graph* g);
 
 // Simulateur de Crise & Départs en Cascade (Algorithme de Tarjan DFS avec Stack en C)
 CascadingFailureReport simulate_cascading_failure(Graph* g, const int* resigned_ids, int num_resigned);
+
+// Analyse Temporelle & Vélocité des Échanges (Sliding Window & Dérivée Delta PageRank en C)
+TemporalReport calculate_temporal_ona(Graph* g);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);
