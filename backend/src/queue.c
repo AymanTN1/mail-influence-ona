@@ -14,29 +14,38 @@ Queue* create_queue(int initial_capacity) {
 }
 
 void enqueue(Queue* q, int item) {
+    if (!q) return;
     if (q->count >= q->capacity) {
-        q->capacity *= 2;
-        q->items = (int*)realloc(q->items, q->capacity * sizeof(int));
+        int new_cap = q->capacity * 2;
+        int* new_items = (int*)malloc(new_cap * sizeof(int));
+        for (int i = 0; i < q->count; i++) {
+            new_items[i] = q->items[(q->front + i) % q->capacity];
+        }
+        free(q->items);
+        q->items = new_items;
+        q->capacity = new_cap;
+        q->front = 0;
+        q->rear = q->count - 1;
     }
 
-    q->rear = (q->rear + 1);
+    q->rear = (q->rear + 1) % q->capacity;
     q->items[q->rear] = item;
     q->count++;
 }
 
 int dequeue(Queue* q) {
-    if (is_queue_empty(q)) {
+    if (!q || is_queue_empty(q)) {
         return -1;
     }
 
     int item = q->items[q->front];
-    q->front++;
+    q->front = (q->front + 1) % q->capacity;
     q->count--;
     return item;
 }
 
 bool is_queue_empty(Queue* q) {
-    return q->count == 0;
+    return !q || q->count == 0;
 }
 
 void free_queue(Queue* q) {

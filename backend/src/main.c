@@ -60,6 +60,17 @@ int main(int argc, char* argv[]) {
                bf.members[b].is_critical ? "🚨 [BUS FACTOR CRITIQUE]" : "🟢 [CHARGE NORMALE]");
     }
 
+    // 6. Détection des Ponts Informels & Nœuds Passerelles (Brandes & Max-Heap C)
+    printf("\n🌉 --- Détection des Ponts Informels (Boundary Spanners en C) ---\n");
+    BoundarySpannerReport bridges = calculate_boundary_spanners(g);
+    int max_br_display = (bridges.count > 5) ? 5 : bridges.count;
+    for (int br = 0; br < max_br_display; br++) {
+        BoundarySpanner* bs = &bridges.spanners[br];
+        printf("  - %-15s | %-12s | Betweenness: %4.1f | %d Depts Connectés | Score Pont: %4.1f %s\n",
+               bs->name, bs->dept, bs->betweenness, bs->external_depts_count, bs->bridge_score,
+               bs->is_key_broker ? "🌉 [CONNECTEUR CRITIQUE]" : "🔗 [PASSERELLE]");
+    }
+
     // 6. Rapport d'Audit Global de Santé Organisationnelle (Score 0-100)
     printf("\n======================================================================\n");
     printf(" 📑 RAPPORT D'AUDIT DE SANTÉ ORGANISATIONNELLE (ONA C ENGINE)\n");

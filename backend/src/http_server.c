@@ -76,6 +76,18 @@ static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* benc
             (b < bf.count - 1) ? "," : "");
     }
 
+    offset += snprintf(response_body + offset, buf_size - offset, "  ],\n  \"boundarySpanners\": [\n");
+
+    BoundarySpannerReport bsr = calculate_boundary_spanners(g);
+    for (int s = 0; s < bsr.count; s++) {
+        BoundarySpanner* bs = &bsr.spanners[s];
+        offset += snprintf(response_body + offset, buf_size - offset,
+            "    {\"nodeId\": %d, \"name\": \"%s\", \"dept\": \"%s\", \"role\": \"%s\", \"betweenness\": %.1f, \"normalizedBetweenness\": %.2f, \"externalDeptsCount\": %d, \"bridgeScore\": %.1f, \"isKeyBroker\": %s}%s\n",
+            bs->node_id, bs->name, bs->dept, bs->role, bs->betweenness, bs->normalized_betweenness, bs->external_depts_count, bs->bridge_score,
+            bs->is_key_broker ? "true" : "false",
+            (s < bsr.count - 1) ? "," : "");
+    }
+
     if (bench) {
         offset += snprintf(response_body + offset, buf_size - offset, "  ],\n  \"benchmark\": {\n");
         offset += snprintf(response_body + offset, buf_size - offset,

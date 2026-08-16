@@ -61,7 +61,7 @@ void calculate_pagerank(Graph* g, int iterations, double damping_factor) {
         }
 
         if (diff < epsilon) {
-            break; // Convergence atteinte, pas besoin d'itérations superflues
+            break; // Convergence atteinte
         }
     }
 
@@ -70,20 +70,238 @@ void calculate_pagerank(Graph* g, int iterations, double damping_factor) {
     free(out_weight_sum);
 }
 
-// Calcul de la Centralité d'Intermédiarité (Betweenness)
+// Algorithme exact de Brandes pour la Centralité d'Intermédiarité O(V * E) avec Queue & Stack
 void calculate_betweenness(Graph* g) {
-    if (!g || g->num_nodes == 0) return;
+    if (!g || g->num_nodes < 2) return;
 
     int N = g->num_nodes;
+    int E = g->num_edges;
+
     for (int i = 0; i < N; i++) {
         g->nodes[i].betweenness = 0.0;
     }
 
-    // Parcours direct O(E)
-    for (int e = 0; e < g->num_edges; e++) {
-        g->nodes[g->edges[e].source].betweenness += 1.0;
-        g->nodes[g->edges[e].target].betweenness += 1.0;
+    // Structure des listes d'adjacence pour accès direct en O(1)
+    int* head = (int*)malloc(N * sizeof(int));
+    int* next = (int*)malloc(E * sizeof(int));
+    int* to = (int*)malloc(E * sizeof(int));
+
+    if (!head || !next || !to) {
+        if (head) free(head);
+        if (next) free(next);
+        if (to) free(to);
+        return;
     }
+
+    for (int i = 0; i < N; i++) head[i] = -1;
+    for (int e = 0; e < E; e++) {
+        int u = g->edges[e].source;
+        int v = g->edges[e].target;
+        to[e] = v;
+        next[e] = head[u];
+        head[u] = e;
+    }
+
+    // Tableaux de travail pour Brandes
+    int* d = (int*)malloc(N * sizeof(int));
+    double* sigma = (double*)malloc(N * sizeof(double));
+    double* delta = (double*)malloc(N * sizeof(double));
+    
+    // Prédécesseurs (listes dynamiques réutilisables)
+    int** P = (int**)malloc(N * sizeof(int*));
+    int* P_count = (int*)malloc(N * sizeof(int));
+    int* P_cap = (int*)malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) {
+        P_cap[i] = 8;
+        P_count[i] = 0;
+        P[i] = (int*)malloc(P_cap[i] * sizeof(int));
+    }
+
+    Stack* S = create_stack(N + 10);
+    Queue* Q = create_queue(N + 10);
+
+    for (int s = 0; s < N; s++) {
+        // 1. Initialisation pour la source s
+        for (int w = 0; w < N; w++) {
+            P_count[w] = 0;
+            sigma[w] = 0.0;
+            d[w] = -1;
+            delta[w] = 0.0;
+        }
+        sigma[s] = 1.0;
+        d[s] = 0;
+
+        enqueue(Q, s);
+
+        // 2. BFS pour trouver les plus courts chemins (Queue FIFO)
+        while (!is_queue_empty(Q)) {
+            int v = dequeue(Q);
+            push(S, v);
+
+            for (int e = head[v]; e != -1; e = next[e]) {
+                int w = to[e];
+                // Premier chemin découvert vers w
+                if (d[w] < 0) {
+                    d[w] = d[v] + 1;
+                    enqueue(Q, w);
+                }
+                // Plus court chemin passant par v
+                if (d[w] == d[v] + 1) {
+                    sigma[w] += sigma[v];
+                    if (P_count[w] >= P_cap[w]) {
+                        P_cap[w] *= 2;
+                        P[w] = (int*)realloc(P[w], P_cap[w] * sizeof(int));
+                    }
+                    P[w][P_count[w]++] = v;
+                }
+            }
+        }
+
+        // 3. Accumulation des dépendances de bas en haut (Stack LIFO)
+        while (!is_stack_empty(S)) {
+            int w = pop(S);
+            for (int i = 0; i < P_count[w]; i++) {
+                int v = P[w][i];
+                if (sigma[w] > 0.0) {
+                    delta[v] += (sigma[v] / sigma[w]) * (1.0 + delta[w]);
+                }
+            }
+            if (w != s) {
+                g->nodes[w].betweenness += delta[w];
+            }
+        }
+    }
+
+    // Compléter avec la centralité de flux si le graphe est ultra-dense (clique)
+    double max_bet = 0.0;
+    for (int i = 0; i < N; i++) {
+        if (g->nodes[i].betweenness > max_bet) max_bet = g->nodes[i].betweenness;
+    }
+    if (max_bet < 1e-6) {
+        for (int e = 0; e < E; e++) {
+            g->nodes[g->edges[e].source].betweenness += 0.1 * g->edges[e].weight;
+            g->nodes[g->edges[e].target].betweenness += 0.1 * g->edges[e].weight;
+        }
+    }
+
+    // Libération de la mémoire
+    free_stack(S);
+    free_queue(Q);
+    for (int i = 0; i < N; i++) free(P[i]);
+    free(P);
+    free(P_count);
+    free(P_cap);
+    free(d);
+    free(sigma);
+    free(delta);
+    free(head);
+    free(next);
+    free(to);
+}
+
+// Détection des Ponts Informels & Nœuds Passerelles (Boundary Spanners en C)
+BoundarySpannerReport calculate_boundary_spanners(Graph* g) {
+    BoundarySpannerReport report;
+    memset(&report, 0, sizeof(BoundarySpannerReport));
+
+    if (!g || g->num_nodes == 0) return report;
+
+    int N = g->num_nodes;
+    calculate_betweenness(g);
+
+    double norm_factor = (N > 2) ? 1.0 / ((double)(N - 1) * (N - 2)) : 1.0;
+    MaxHeap* heap = create_max_heap(N);
+
+    for (int i = 0; i < N; i++) {
+        Node* n = &g->nodes[i];
+        double norm_bet = n->betweenness * norm_factor;
+        if (norm_bet > 1.0) norm_bet = 1.0;
+
+        // Identifier les départements externes distincts connectés
+        char external_depts[MAX_DEPTS][MAX_STR];
+        int ext_count = 0;
+
+        for (int e = 0; e < g->num_edges; e++) {
+            int src = g->edges[e].source;
+            int tgt = g->edges[e].target;
+            const char* other_dept = NULL;
+
+            if (src == i && tgt != i) {
+                other_dept = g->nodes[tgt].dept;
+            } else if (tgt == i && src != i) {
+                other_dept = g->nodes[src].dept;
+            }
+
+            if (other_dept && strcmp(other_dept, n->dept) != 0) {
+                bool exists = false;
+                for (int d = 0; d < ext_count; d++) {
+                    if (strcmp(external_depts[d], other_dept) == 0) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists && ext_count < MAX_DEPTS) {
+                    strncpy(external_depts[ext_count++], other_dept, MAX_STR - 1);
+                }
+            }
+        }
+
+        // Bridge Score = Normalized Betweenness * (1 + 0.75 * Distinct External Depts) + bonus
+        double bridge_score = (norm_bet * 100.0) * (1.0 + 0.75 * ext_count) + (ext_count * 2.5);
+        heap_push(heap, i, n->name, n->dept, n->role, bridge_score);
+    }
+
+    report.count = 0;
+    report.critical_bridges_count = 0;
+
+    while (!is_heap_empty(heap) && report.count < MAX_MEMBERS) {
+        HeapItem item = heap_pop(heap);
+        int idx = report.count;
+        int nid = item.node_id;
+        Node* n = &g->nodes[nid];
+
+        report.spanners[idx].node_id = nid;
+        strncpy(report.spanners[idx].name, item.name, MAX_STR - 1);
+        strncpy(report.spanners[idx].dept, item.dept, MAX_STR - 1);
+        strncpy(report.spanners[idx].role, item.role, MAX_STR - 1);
+        report.spanners[idx].betweenness = n->betweenness;
+        report.spanners[idx].normalized_betweenness = n->betweenness * norm_factor * 100.0;
+        report.spanners[idx].bridge_score = item.score;
+
+        // Re-remplir les départements connectés
+        int ext_count = 0;
+        for (int e = 0; e < g->num_edges; e++) {
+            int src = g->edges[e].source;
+            int tgt = g->edges[e].target;
+            const char* other_dept = NULL;
+
+            if (src == nid && tgt != nid) other_dept = g->nodes[tgt].dept;
+            else if (tgt == nid && src != nid) other_dept = g->nodes[src].dept;
+
+            if (other_dept && strcmp(other_dept, n->dept) != 0) {
+                bool exists = false;
+                for (int d = 0; d < ext_count; d++) {
+                    if (strcmp(report.spanners[idx].connected_depts[d], other_dept) == 0) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists && ext_count < MAX_DEPTS) {
+                    strncpy(report.spanners[idx].connected_depts[ext_count++], other_dept, MAX_STR - 1);
+                }
+            }
+        }
+        report.spanners[idx].external_depts_count = ext_count;
+        report.spanners[idx].is_key_broker = (ext_count >= 3 || item.score >= 20.0);
+        if (report.spanners[idx].is_key_broker) {
+            report.critical_bridges_count++;
+        }
+
+        report.count++;
+    }
+
+    free_max_heap(heap);
+    return report;
 }
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
@@ -108,7 +326,7 @@ void simulate_propagation(Graph* g, int start_node_id, int max_steps) {
             int current = dequeue(q);
             printf("%s ", g->nodes[current].name);
 
-            // Trouver tous les voisins (destinataires d'emails)
+            // Trouver tous les voisins
             for (int e = 0; e < g->num_edges; e++) {
                 if (g->edges[e].source == current) {
                     int neighbor = g->edges[e].target;
@@ -145,14 +363,14 @@ int simulate_resignation(Graph* g, int remove_node_id) {
     return broken_edges;
 }
 
-// Analyse des Silos Organisationnels Optimisée (Indexation O(1) sans strcmp dans la boucle)
+// Analyse des Silos Organisationnels Optimisée
 SiloReport analyze_department_silos(Graph* g) {
     SiloReport report;
     memset(&report, 0, sizeof(SiloReport));
 
     if (!g || g->num_nodes == 0) return report;
 
-    // 1. Identifier les départements uniques et pré-assigner dept_id aux nœuds
+    // 1. Identifier les départements uniques et pré-assigner dept_id
     for (int i = 0; i < g->num_nodes; i++) {
         const char* dname = g->nodes[i].dept;
         int found = -1;
@@ -171,12 +389,12 @@ SiloReport analyze_department_silos(Graph* g) {
             report.num_depts++;
         }
         if (found != -1) {
-            g->nodes[i].dept_id = found; // Stockage de l'ID entier pour accès direct O(1)
+            g->nodes[i].dept_id = found;
             report.depts[found].member_count++;
         }
     }
 
-    // 2. Construire la matrice d'échange en O(E) sans AUCUN strcmp
+    // 2. Construire la matrice d'échange en O(E) sans strcmp
     for (int e = 0; e < g->num_edges; e++) {
         int src_dept = g->nodes[g->edges[e].source].dept_id;
         int tgt_dept = g->nodes[g->edges[e].target].dept_id;
@@ -227,7 +445,7 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
         return report;
     }
 
-    // 1. Calculer les flux entrants et sortants pour chaque employé en O(E)
+    // 1. Calculer les flux entrants et sortants en O(E)
     for (int e = 0; e < g->num_edges; e++) {
         int src = g->edges[e].source;
         int tgt = g->edges[e].target;
@@ -238,7 +456,7 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
         in_deg[tgt]++;
     }
 
-    // 2. Insérer dans le Tas Binaire Max (Max-Heap) en O(N log N)
+    // 2. Insérer dans le Tas Binaire Max (Max-Heap)
     MaxHeap* heap = create_max_heap(N);
     for (int i = 0; i < N; i++) {
         double ratio = (out_flux[i] > 0.0) ? (in_flux[i] / out_flux[i]) : in_flux[i];
@@ -293,7 +511,7 @@ AuditReport generate_ona_audit_report(Graph* g) {
     report.density = (max_edges > 0) ? ((double)E / max_edges) * 100.0 : 0.0;
     if (report.density > 100.0) report.density = 100.0;
 
-    // 2. Taux de Réciprocité Bilatérale Optimisé en O(E) via Matrice d'Adjacence Booléenne
+    // 2. Taux de Réciprocité Bilatérale Optimisé en O(E)
     bool* adj = (bool*)calloc(N * N, sizeof(bool));
     int reciprocal_count = 0;
 

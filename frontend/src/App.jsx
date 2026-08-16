@@ -8,16 +8,16 @@ export default function App() {
   const [simulatedPropagation, setSimulatedPropagation] = useState(null);
   const [resignationImpact, setResignationImpact] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
-  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'influence' | 'busfactor' | 'silos'
+  const [activeTab, setActiveTab] = useState('bridges'); // 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
 
   // Mode secours (Mock data)
   const mockData = {
     nodes: [
-      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0654, betweenness: 324.0 },
-      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 340.0 },
-      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 346.0 },
-      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0644, betweenness: 332.0 },
-      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0642, betweenness: 302.0 }
+      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0654, betweenness: 12.5 },
+      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 18.0 },
+      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 24.5 },
+      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0644, betweenness: 14.0 },
+      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0642, betweenness: 11.0 }
     ],
     edges: [
       { source: 0, target: 2, weight: 4.5 },
@@ -41,25 +41,31 @@ export default function App() {
       { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', inFlux: 472.0, outFlux: 488.2, overloadScore: 1027.0, isCritical: true },
       { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', inFlux: 470.3, outFlux: 425.6, overloadScore: 1028.6, isCritical: true }
     ],
+    boundarySpanners: [
+      { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', betweenness: 24.5, normalizedBetweenness: 13.5, externalDeptsCount: 5, bridgeScore: 38.4, isKeyBroker: true },
+      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', betweenness: 18.0, normalizedBetweenness: 9.8, externalDeptsCount: 4, bridgeScore: 29.2, isKeyBroker: true },
+      { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', betweenness: 14.0, normalizedBetweenness: 7.7, externalDeptsCount: 4, bridgeScore: 23.1, isKeyBroker: true },
+      { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', betweenness: 12.5, normalizedBetweenness: 6.8, externalDeptsCount: 3, bridgeScore: 18.7, isKeyBroker: false },
+      { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', betweenness: 11.0, normalizedBetweenness: 6.0, externalDeptsCount: 3, bridgeScore: 16.5, isKeyBroker: false }
+    ],
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.73,
-      pageRankTimeMs: 0.35,
-      totalTimeMs: 2.17
+      parseTimeMs: 1.33,
+      pageRankTimeMs: 0.03,
+      totalTimeMs: 1.48
     },
     auditReport: {
-      healthScore: 82.5,
-      grade: 'A',
+      healthScore: 64.0,
+      grade: 'C',
       density: 100.0,
       reciprocity: 100.0,
-      crossDeptConnectivity: 94.2,
+      crossDeptConnectivity: 96.0,
       resilienceScore: 0.0,
-      executiveSummary: 'Organisation fluide avec une excellente dynamique de collaboration.',
+      executiveSummary: 'Risques de surcharge et de silos nécessitant un suivi managérial.',
       recommendations: [
-        'Rééquilibrer la charge des 15 employés en Bus Factor critique pour sécuriser les projets.',
-        'Maintenir les rituels actuels et auditer l\'évolution des flux chaque trimestre.'
+        'Rééquilibrer la charge des 15 employés en Bus Factor critique pour sécuriser les projets.'
       ]
     }
   };
@@ -84,6 +90,7 @@ export default function App() {
   const busFactorList = currentData.busFactor || mockData.busFactor;
   const benchmark = currentData.benchmark || mockData.benchmark;
   const auditReport = currentData.auditReport || mockData.auditReport;
+  const boundarySpanners = currentData.boundarySpanners || mockData.boundarySpanners;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -160,62 +167,116 @@ export default function App() {
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Audit & Intelligence des Réseaux d'Entreprise
+            Intelligence Réseau & Théorie des Graphes en C
           </p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#0b0f19', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        {/* 5 Navigation Tabs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button 
+            className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`}
+            onClick={() => setActiveTab('bridges')}
+            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
+          >
+            🌉 Ponts
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
             onClick={() => setActiveTab('audit')}
-            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
+            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
           >
             📑 Audit
           </button>
           <button 
             className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
-            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
+            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
           >
             🏆 Leaders
           </button>
           <button 
             className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
             onClick={() => setActiveTab('busfactor')}
-            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
+            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
           >
-            ⚠️ Surcharge
+            ⚠️ Risque
           </button>
           <button 
             className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
             onClick={() => setActiveTab('silos')}
-            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
+            style={{ fontSize: '0.68rem', padding: '6px 2px' }}
           >
             🏢 Silos
           </button>
         </div>
 
-        {/* Tab 0: Audit de Santé Organisationnelle (Score 0-100) */}
+        {/* Tab 1: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
+        {activeTab === 'bridges' && boundarySpanners && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#c084fc' }}>Connecteurs Informels (Brandes)</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Top Passerelles</span>
+            </div>
+            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
+              {boundarySpanners.map((item, idx) => {
+                const nodeObj = currentData.nodes.find(n => n.id === item.nodeId) || { id: item.nodeId, name: item.name, dept: item.dept, role: item.role, pageRank: 0.07, betweenness: item.betweenness };
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => { setSelectedNode(nodeObj); setSelectedDept(null); }}
+                    style={{
+                      background: selectedNode?.id === item.nodeId ? '#1e293b' : 'var(--card-bg)',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      border: selectedNode?.id === item.nodeId ? '1px solid #c084fc' : '1px solid #374151',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{idx + 1}. {item.name}</span>
+                      <span style={{
+                        fontSize: '0.62rem',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: item.isKeyBroker ? '#581c87' : '#1e1b4b',
+                        color: item.isKeyBroker ? '#e9d5ff' : '#c7d2fe',
+                        fontWeight: 600
+                      }}>
+                        {item.isKeyBroker ? '🌉 CONNECTEUR CLÉ' : '🔗 PASSERELLE'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Intermédiarité: <strong style={{ color: '#c084fc' }}>{item.betweenness.toFixed(1)}</strong></span>
+                      <span>Depts: <strong>{item.externalDeptsCount} liés</strong></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Audit de Santé Organisationnelle (Score 0-100) */}
         {activeTab === 'audit' && auditReport && (
-          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto' }}>
+          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '290px', overflowY: 'auto' }}>
             {/* Score Banner */}
             <div style={{
               background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
-              padding: '14px',
+              padding: '10px 12px',
               borderRadius: '8px',
               border: '1px solid #06b6d4',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Score Global de Santé Réseau
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#38bdf8', margin: '4px 0' }}>
-                {auditReport.healthScore.toFixed(1)} <span style={{ fontSize: '1rem', color: '#9ca3af' }}>/ 100</span>
+              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#38bdf8', margin: '2px 0' }}>
+                {auditReport.healthScore.toFixed(1)} <span style={{ fontSize: '0.9rem', color: '#9ca3af' }}>/ 100</span>
               </div>
               <span style={{
-                fontSize: '0.72rem',
-                padding: '3px 10px',
+                fontSize: '0.65rem',
+                padding: '2px 8px',
                 borderRadius: '12px',
                 background: auditReport.healthScore >= 75 ? '#064e3b' : '#7c2d12',
                 color: auditReport.healthScore >= 75 ? '#6ee7b7' : '#fdba74',
@@ -223,35 +284,32 @@ export default function App() {
               }}>
                 GRADE : {auditReport.grade}
               </span>
-              <p style={{ fontSize: '0.75rem', color: '#e2e8f0', margin: '10px 0 0 0', lineHeight: 1.4 }}>
-                {auditReport.executiveSummary}
-              </p>
             </div>
 
             {/* Sub-scores breakdown */}
-            <div style={{ background: '#0b0f19', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+            <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Densité Globale:</span>
                 <strong>{auditReport.density.toFixed(1)}%</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Réciprocité Bilatérale:</span>
                 <strong>{auditReport.reciprocity.toFixed(1)}%</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Connectivité Transversale:</span>
                 <strong>{auditReport.crossDeptConnectivity.toFixed(1)}%</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Résilience Bus Factor:</span>
                 <strong>{auditReport.resilienceScore.toFixed(1)}%</strong>
               </div>
             </div>
 
             {/* Recommendations */}
-            <div style={{ background: '#111827', padding: '12px', borderRadius: '8px', border: '1px solid #374151' }}>
-              <h5 style={{ margin: '0 0 6px 0', color: '#f59e0b', fontSize: '0.78rem' }}>💡 Recommandations RH & Management</h5>
-              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.72rem', color: '#d1d5db', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ background: '#111827', padding: '10px', borderRadius: '8px', border: '1px solid #374151' }}>
+              <h5 style={{ margin: '0 0 4px 0', color: '#f59e0b', fontSize: '0.74rem' }}>💡 Recommandations RH & Management</h5>
+              <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.68rem', color: '#d1d5db', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {auditReport.recommendations.map((rec, i) => (
                   <li key={i}>{rec}</li>
                 ))}
@@ -260,14 +318,14 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Leaders Informels (PageRank) */}
+        {/* Tab 3: Leaders Informels (PageRank) */}
         {activeTab === 'influence' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f3f4f6' }}>Classement PageRank C</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Power Iteration</span>
             </div>
-            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
+            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
               {currentData.nodes
                 .slice()
                 .sort((a, b) => b.pageRank - a.pageRank)
@@ -289,7 +347,7 @@ export default function App() {
                       <span className={`badge ${getBadgeClass(item.dept)}`}>{item.dept}</span>
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      PageRank: <strong style={{ color: 'var(--accent-cyan)' }}>{item.pageRank.toFixed(4)}</strong> | Betweenness: <strong>{item.betweenness}</strong>
+                      PageRank: <strong style={{ color: 'var(--accent-cyan)' }}>{item.pageRank.toFixed(4)}</strong> | Betweenness: <strong>{item.betweenness.toFixed(1)}</strong>
                     </div>
                   </div>
                 ))}
@@ -297,16 +355,16 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Bus Factor & Risque de Surcharge (Max-Heap C) */}
+        {/* Tab 4: Bus Factor & Risque de Surcharge (Max-Heap C) */}
         {activeTab === 'busfactor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b' }}>Risque de Surcharge (Max-Heap)</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Top Risques</span>
             </div>
-            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
+            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
               {busFactorList.map((item, idx) => {
-                const nodeObj = currentData.nodes.find(n => n.id === item.nodeId) || { id: item.nodeId, name: item.name, dept: item.dept, role: item.role, pageRank: 0.2, betweenness: 2.0 };
+                const nodeObj = currentData.nodes.find(n => n.id === item.nodeId) || { id: item.nodeId, name: item.name, dept: item.dept, role: item.role, pageRank: 0.07, betweenness: 10.0 };
                 return (
                   <div
                     key={idx}
@@ -344,14 +402,14 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 3: Silos Organisationnels & Isolation (Homophily C) */}
+        {/* Tab 5: Silos Organisationnels & Isolation (Homophily C) */}
         {activeTab === 'silos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#38bdf8' }}>Isolation Inter-Équipes</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Homophily C</span>
             </div>
-            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
+            <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
               {silosList.map((silo, idx) => (
                 <div 
                   key={idx}
@@ -402,7 +460,7 @@ export default function App() {
         {selectedNode && (
           <div style={{ background: '#111827', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h4 style={{ margin: 0, color: 'var(--accent-purple)', fontSize: '0.85rem' }}>🔎 Inspecteur de Nœud</h4>
+              <h4 style={{ margin: 0, color: '#c084fc', fontSize: '0.85rem' }}>🔎 Inspecteur de Collaborateur</h4>
               <button 
                 onClick={() => setSelectedNode(null)} 
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -414,7 +472,7 @@ export default function App() {
               <p style={{ margin: 0 }}><strong>Nom:</strong> {selectedNode.name}</p>
               <p style={{ margin: 0 }}><strong>Poste:</strong> {selectedNode.role}</p>
               <p style={{ margin: 0 }}><strong>Département:</strong> {selectedNode.dept}</p>
-              <p style={{ margin: 0 }}><strong>PageRank (C):</strong> {selectedNode.pageRank?.toFixed(4) || 'N/A'}</p>
+              <p style={{ margin: 0 }}><strong>Betweenness (Brandes):</strong> {selectedNode.betweenness ? selectedNode.betweenness.toFixed(1) : 'N/A'}</p>
             </div>
 
             <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
@@ -494,7 +552,7 @@ export default function App() {
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {selectedDept ? `Filtrage actif sur : ${selectedDept}` : 'Cliquez sur un employé ou un onglet à gauche pour explorer l\'influence et les flux.'}
+              {selectedDept ? `Filtrage actif sur : ${selectedDept}` : 'Cliquez sur un collaborateur ou un onglet pour analyser les flux et les connecteurs.'}
             </p>
           </div>
 
@@ -527,7 +585,7 @@ export default function App() {
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
               </marker>
               <marker id="arrow-highlight" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#c084fc" />
               </marker>
             </defs>
 
@@ -551,7 +609,7 @@ export default function App() {
                   y1={sourcePos.y}
                   x2={targetPos.x}
                   y2={targetPos.y}
-                  stroke={isHighlighted ? (isInternal ? '#3b82f6' : '#06b6d4') : '#334155'}
+                  stroke={isHighlighted ? (isInternal ? '#3b82f6' : '#c084fc') : '#334155'}
                   strokeWidth={edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5}
                   strokeDasharray={isInternal ? 'none' : '4,2'}
                   markerEnd={isHighlighted ? "url(#arrow-highlight)" : "url(#arrow)"}
@@ -569,6 +627,7 @@ export default function App() {
               const radius = 20 + (node.pageRank || 0) * 45;
               const deptColor = getDeptColor(node.dept);
               const isCriticalBusFactor = busFactorList.find(b => b.nodeId === node.id)?.isCritical;
+              const isKeyBridge = boundarySpanners.find(b => b.nodeId === node.id)?.isKeyBroker;
 
               return (
                 <g 
@@ -589,10 +648,22 @@ export default function App() {
                     />
                   )}
 
+                  {/* Purple aura ring for Key Boundary Spanners / Brokers */}
+                  {isKeyBridge && (
+                    <circle
+                      r={radius + 9}
+                      fill="none"
+                      stroke="#c084fc"
+                      strokeWidth="1.5"
+                      strokeDasharray="2,2"
+                      opacity="0.9"
+                    />
+                  )}
+
                   <circle
                     r={radius}
                     fill={isSelected ? '#1e293b' : '#111827'}
-                    stroke={isSelected ? '#06b6d4' : deptColor}
+                    stroke={isSelected ? '#c084fc' : deptColor}
                     strokeWidth={isSelected ? 3.5 : 2}
                     style={{ transition: 'all 0.2s ease' }}
                   />

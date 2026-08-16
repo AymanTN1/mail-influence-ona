@@ -57,6 +57,27 @@ typedef struct {
     int num_recommendations;
 } AuditReport;
 
+// Métriques d'un Connecteur Informel / Nœud Pont (Boundary Spanner)
+typedef struct {
+    int node_id;
+    char name[MAX_STR];
+    char dept[MAX_STR];
+    char role[MAX_STR];
+    double betweenness;            // Centralité exacte de Brandes O(V*E)
+    double normalized_betweenness; // 0.0% à 100.0%
+    int external_depts_count;      // Nombre de départements distincts connectés
+    double bridge_score;           // Indice de passerelle inter-silos
+    bool is_key_broker;            // true si connecteur critique
+    char connected_depts[MAX_DEPTS][MAX_STR];
+} BoundarySpanner;
+
+// Rapport global des Ponts Informels
+typedef struct {
+    BoundarySpanner spanners[MAX_MEMBERS];
+    int count;
+    int critical_bridges_count;
+} BoundarySpannerReport;
+
 // Calcul de la Centralité PageRank (Power Iteration)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor);
 
@@ -71,6 +92,9 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g);
 
 // Générateur du Rapport d'Audit & Score de Santé Organisationnelle (0-100)
 AuditReport generate_ona_audit_report(Graph* g);
+
+// Détection des Ponts Informels & Nœuds Passerelles (Algorithme de Brandes O(V*E))
+BoundarySpannerReport calculate_boundary_spanners(Graph* g);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);
