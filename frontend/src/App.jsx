@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './index.css';
 
 export default function App() {
   const [data, setData] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [hoveredEdge, setHoveredEdge] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [backendOnline, setBackendOnline] = useState(false);
   const [simulatedPropagation, setSimulatedPropagation] = useState(null);
   const [resignationImpact, setResignationImpact] = useState(null);
@@ -12,25 +15,27 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('velocity'); // 'velocity' | 'crashtest' | 'tribes' | 'bridges' | 'audit' | 'influence' | 'busfactor' | 'silos'
   const [timeView, setTimeView] = useState('delta'); // 't1' | 't2' | 'delta'
   const [customResignedNodes, setCustomResignedNodes] = useState([5, 6]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [layoutMode, setLayoutMode] = useState('circle'); // 'circle' | 'departments' | 'tribes'
 
-  // Mode secours (Mock data)
+  // Fallback Mock data
   const mockData = {
     nodes: [
-      { id: 0, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0705, betweenness: 3.0 },
-      { id: 1, name: 'Lucas Scott', email: 'lucas@corp.com', dept: 'Sales', role: 'Sales Lead', pageRank: 0.0609, betweenness: 1.5 },
-      { id: 2, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0635, betweenness: 2.3 },
-      { id: 3, name: 'Rachel Green', email: 'rachel@corp.com', dept: 'HR', role: 'Talent Lead', pageRank: 0.0611, betweenness: 2.5 },
-      { id: 4, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0696, betweenness: 3.6 },
-      { id: 5, name: 'Sophia Lin', email: 'sophia@corp.com', dept: 'Product', role: 'Product Owner', pageRank: 0.0710, betweenness: 2.4 },
-      { id: 6, name: 'Emma Watson', email: 'emma@corp.com', dept: 'Design', role: 'Lead UI/UX', pageRank: 0.0692, betweenness: 4.9 },
-      { id: 7, name: 'Elena Rostova', email: 'elena@corp.com', dept: 'Engineering', role: 'Senior Dev', pageRank: 0.0650, betweenness: 2.3 },
-      { id: 8, name: 'Harvey Specter', email: 'harvey@corp.com', dept: 'Legal', role: 'General Counsel', pageRank: 0.0640, betweenness: 2.6 },
-      { id: 9, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 1.0 },
-      { id: 10, name: 'James Vance', email: 'james@corp.com', dept: 'Product', role: 'Head of Product', pageRank: 0.0678, betweenness: 2.1 },
-      { id: 11, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 1.5 },
-      { id: 12, name: 'Michael Chang', email: 'michael@corp.com', dept: 'Finance', role: 'CFO', pageRank: 0.0699, betweenness: 2.7 },
-      { id: 13, name: 'Donna Paulsen', email: 'donna@corp.com', dept: 'Executive', role: 'Chief of Staff', pageRank: 0.0674, betweenness: 1.5 },
-      { id: 14, name: 'Louis Litt', email: 'louis@corp.com', dept: 'Legal', role: 'Senior Partner', pageRank: 0.0725, betweenness: 1.1 }
+      { id: 0, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0705, betweenness: 1.1 },
+      { id: 1, name: 'Lucas Scott', email: 'lucas@corp.com', dept: 'Sales', role: 'Sales Lead', pageRank: 0.0609, betweenness: 0.7 },
+      { id: 2, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0635, betweenness: 1.0 },
+      { id: 3, name: 'Rachel Green', email: 'rachel@corp.com', dept: 'HR', role: 'Talent Lead', pageRank: 0.0611, betweenness: 1.2 },
+      { id: 4, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0696, betweenness: 1.6 },
+      { id: 5, name: 'Sophia Lin', email: 'sophia@corp.com', dept: 'Product', role: 'Product Owner', pageRank: 0.0710, betweenness: 1.0 },
+      { id: 6, name: 'Emma Watson', email: 'emma@corp.com', dept: 'Design', role: 'Lead UI/UX', pageRank: 0.0692, betweenness: 1.8 },
+      { id: 7, name: 'Elena Rostova', email: 'elena@corp.com', dept: 'Engineering', role: 'Senior Dev', pageRank: 0.0650, betweenness: 1.4 },
+      { id: 8, name: 'Harvey Specter', email: 'harvey@corp.com', dept: 'Legal', role: 'General Counsel', pageRank: 0.0640, betweenness: 1.4 },
+      { id: 9, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 0.6 },
+      { id: 10, name: 'James Vance', email: 'james@corp.com', dept: 'Product', role: 'Head of Product', pageRank: 0.0678, betweenness: 1.7 },
+      { id: 11, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 0.6 },
+      { id: 12, name: 'Michael Chang', email: 'michael@corp.com', dept: 'Finance', role: 'CFO', pageRank: 0.0699, betweenness: 1.3 },
+      { id: 13, name: 'Donna Paulsen', email: 'donna@corp.com', dept: 'Executive', role: 'Chief of Staff', pageRank: 0.0674, betweenness: 1.3 },
+      { id: 14, name: 'Louis Litt', email: 'louis@corp.com', dept: 'Legal', role: 'Senior Partner', pageRank: 0.0725, betweenness: 0.9 }
     ],
     edges: [
       { source: 0, target: 1, weight: 4.5 },
@@ -54,8 +59,8 @@ export default function App() {
       { nodeId: 11, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 818.9, outFlux: 910.5, overloadScore: 1639.2, isCritical: true }
     ],
     boundarySpanners: [
-      { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', betweenness: 4.9, normalizedBetweenness: 2.71, externalDeptsCount: 7, bridgeScore: 34.4, isKeyBroker: true },
-      { nodeId: 4, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', betweenness: 3.6, normalizedBetweenness: 1.95, externalDeptsCount: 7, bridgeScore: 29.7, isKeyBroker: true }
+      { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', betweenness: 1.8, normalizedBetweenness: 100.0, externalDeptsCount: 7, bridgeScore: 642.5, isKeyBroker: true },
+      { nodeId: 10, name: 'James Vance', dept: 'Product', role: 'Head of Product', betweenness: 1.7, normalizedBetweenness: 90.7, externalDeptsCount: 7, bridgeScore: 583.3, isKeyBroker: true }
     ],
     communities: [
       { id: 0, label: 'Tribu 1 (Sales & Co)', memberCount: 4, dominantDept: 'Sales', internalFlux: 2019.6, externalFlux: 300.5, cohesionScore: 87.0, memberIds: [0, 1, 2, 3] },
@@ -65,51 +70,49 @@ export default function App() {
     cascadingSimulation: {
       numResigned: 2,
       resignedNodeIds: [5, 6],
-      brokenEdgesCount: 624,
-      lostFlux: 1980.5,
-      totalComponents: 3,
-      isolatedEmployeesCount: 2,
-      fragmentationIndex: 38.5,
-      riskLevel: 'CRITIQUE',
-      impactSummary: 'Fragmentation sévère : 624 liaisons rompues et scission du réseau en 3 composantes.',
+      brokenEdgesCount: 766,
+      lostFlux: 2984.3,
+      totalComponents: 1,
+      isolatedEmployeesCount: 0,
+      fragmentationIndex: 0.0,
+      riskLevel: 'FAIBLE',
+      impactSummary: 'Réseau résilient : 766 liaisons perdues sans fragmentation majeure.',
       components: [
-        { sccId: 0, memberCount: 8, dominantDept: 'Legal', isIsolated: false, memberIds: [0, 1, 2, 3, 8, 9, 13, 14] },
-        { sccId: 1, memberCount: 3, dominantDept: 'Engineering', isIsolated: false, memberIds: [4, 7, 11] },
-        { sccId: 2, memberCount: 2, dominantDept: 'Product', isIsolated: true, memberIds: [10, 12] }
+        { sccId: 0, memberCount: 13, dominantDept: 'Engineering', isIsolated: false, memberIds: [0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14] }
       ]
     },
     temporalReport: {
-      healthScoreT1: 58.5,
-      healthScoreT2: 64.0,
-      deltaHealthScore: 5.5,
-      crossDeptT1: 82.0,
-      crossDeptT2: 89.5,
-      deltaCrossDept: 7.5,
+      healthScoreT1: 60.5,
+      healthScoreT2: 61.2,
+      deltaHealthScore: 0.7,
+      crossDeptT1: 85.0,
+      crossDeptT2: 86.5,
+      deltaCrossDept: 1.5,
       risingLeadersCount: 5,
-      decliningNodesCount: 3,
-      executiveSummary: 'Évolution ONA : 5 leaders émergents détectés. Variation de connectivité transversale : +7.5% (Score Santé : +5.5 pts).',
+      decliningNodesCount: 6,
+      executiveSummary: 'Évolution ONA : 5 leaders émergents détectés. Progression de connectivité transversale : +1.5% (Score Santé : +0.7 pts).',
       metrics: [
-        { nodeId: 4, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', pageRankT1: 0.058, pageRankT2: 0.071, deltaPageRank: 0.013, deltaGrowthPct: 22.4, inFluxT1: 390.0, inFluxT2: 431.2, deltaFlux: 41.2, trend: '📈 LEADER ÉMERGENT' },
-        { nodeId: 11, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', pageRankT1: 0.061, pageRankT2: 0.073, deltaPageRank: 0.012, deltaGrowthPct: 19.7, inFluxT1: 380.0, inFluxT2: 438.9, deltaFlux: 58.9, trend: '📈 LEADER ÉMERGENT' },
-        { nodeId: 6, name: 'Emma Watson', dept: 'Design', role: 'Lead UI/UX', pageRankT1: 0.060, pageRankT2: 0.070, deltaPageRank: 0.010, deltaGrowthPct: 16.7, inFluxT1: 410.0, inFluxT2: 482.7, deltaFlux: 72.7, trend: '📈 LEADER ÉMERGENT' },
-        { nodeId: 0, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', pageRankT1: 0.063, pageRankT2: 0.071, deltaPageRank: 0.008, deltaGrowthPct: 12.7, inFluxT1: 270.0, inFluxT2: 327.8, deltaFlux: 57.8, trend: '📈 LEADER ÉMERGENT' },
-        { nodeId: 9, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', pageRankT1: 0.072, pageRankT2: 0.064, deltaPageRank: -0.008, deltaGrowthPct: -11.1, inFluxT1: 320.0, inFluxT2: 275.3, deltaFlux: -44.7, trend: '📉 EN BAISSE' }
+        { nodeId: 14, name: 'Louis Litt', dept: 'Legal', role: 'Senior Partner', pageRankT1: 0.0578, pageRankT2: 0.0677, deltaPageRank: 0.0098, deltaGrowthPct: 17.0, inFluxT1: 253.1, inFluxT2: 311.3, deltaFlux: 58.2, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 3, name: 'Rachel Green', dept: 'HR', role: 'Talent Lead', pageRankT1: 0.0574, pageRankT2: 0.0649, deltaPageRank: 0.0075, deltaGrowthPct: 13.1, inFluxT1: 232.2, inFluxT2: 281.6, deltaFlux: 49.4, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 2, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', pageRankT1: 0.0597, pageRankT2: 0.0665, deltaPageRank: 0.0068, deltaGrowthPct: 11.4, inFluxT1: 258.9, inFluxT2: 295.8, deltaFlux: 36.9, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 12, name: 'Michael Chang', dept: 'Finance', role: 'CFO', pageRankT1: 0.0614, pageRankT2: 0.0665, deltaPageRank: 0.0051, deltaGrowthPct: 8.3, inFluxT1: 255.8, inFluxT2: 306.6, deltaFlux: 50.8, trend: '📈 LEADER ÉMERGENT' },
+        { nodeId: 7, name: 'Elena Rostova', dept: 'Engineering', role: 'Senior Dev', pageRankT1: 0.0670, pageRankT2: 0.0716, deltaPageRank: 0.0046, deltaGrowthPct: 6.8, inFluxT1: 391.2, inFluxT2: 399.7, deltaFlux: 8.5, trend: '📈 LEADER ÉMERGENT' }
       ]
     },
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.23,
-      pageRankTimeMs: 0.23,
-      totalTimeMs: 1.55
+      parseTimeMs: 1.28,
+      pageRankTimeMs: 0.11,
+      totalTimeMs: 1.48
     },
     auditReport: {
-      healthScore: 61.2,
+      healthScore: 55.2,
       grade: 'C',
-      density: 100.0,
-      reciprocity: 98.2,
-      crossDeptConnectivity: 86.5,
+      density: 83.3,
+      reciprocity: 84.6,
+      crossDeptConnectivity: 76.2,
       resilienceScore: 0.0,
       executiveSummary: 'Risques de surcharge et de silos nécessitant un suivi managérial.',
       recommendations: [
@@ -120,20 +123,18 @@ export default function App() {
 
   useEffect(() => {
     fetch('http://localhost:8080/api/ona')
-      ? fetch('http://localhost:8080/api/ona')
-          .then((res) => res.json())
-          .then((json) => {
-            setData(json);
-            setBackendOnline(true);
-            if (json.cascadingSimulation?.resignedNodeIds) {
-              setCustomResignedNodes(json.cascadingSimulation.resignedNodeIds);
-            }
-          })
-          .catch(() => {
-            setData(mockData);
-            setBackendOnline(false);
-          })
-      : setData(mockData);
+      .then((res) => res.json())
+      .then((json) => {
+        setData(json);
+        setBackendOnline(true);
+        if (json.cascadingSimulation?.resignedNodeIds) {
+          setCustomResignedNodes(json.cascadingSimulation.resignedNodeIds);
+        }
+      })
+      .catch(() => {
+        setData(mockData);
+        setBackendOnline(false);
+      });
   }, []);
 
   const currentData = data || mockData;
@@ -175,16 +176,83 @@ export default function App() {
     return colors[commId % colors.length];
   };
 
-  const getNodePos = (idx, total) => {
-    const cx = 375;
-    const cy = 260;
-    const radius = Math.min(220, 150 + total * 4);
-    const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
-    return {
-      x: cx + radius * Math.cos(angle),
-      y: cy + radius * Math.sin(angle)
-    };
-  };
+  // Dynamic Layout Positioning Engine (Circle, Department Clusters, Tribe Clusters)
+  const nodePositions = useMemo(() => {
+    const total = currentData.nodes.length;
+    const positions = {};
+
+    if (layoutMode === 'circle') {
+      const cx = 375;
+      const cy = 260;
+      const radius = Math.min(220, 150 + total * 4);
+      currentData.nodes.forEach((node, idx) => {
+        const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
+        positions[node.id] = {
+          x: cx + radius * Math.cos(angle),
+          y: cy + radius * Math.sin(angle)
+        };
+      });
+    } else if (layoutMode === 'departments') {
+      // Clustered by department
+      const depts = [...new Set(currentData.nodes.map(n => n.dept))];
+      const deptCenters = {};
+      depts.forEach((d, i) => {
+        const angle = (i / depts.length) * 2 * Math.PI - Math.PI / 2;
+        deptCenters[d] = {
+          x: 375 + 175 * Math.cos(angle),
+          y: 260 + 155 * Math.sin(angle)
+        };
+      });
+      const deptCounters = {};
+      currentData.nodes.forEach((node) => {
+        const d = node.dept;
+        deptCounters[d] = (deptCounters[d] || 0);
+        const center = deptCenters[d];
+        const offsetAngle = deptCounters[d] * 1.3;
+        const dist = 36 * (deptCounters[d] + 1) * 0.6;
+        positions[node.id] = {
+          x: center.x + dist * Math.cos(offsetAngle),
+          y: center.y + dist * Math.sin(offsetAngle)
+        };
+        deptCounters[d]++;
+      });
+    } else if (layoutMode === 'tribes') {
+      // Clustered by community
+      const commCount = communities.length || 3;
+      const commCenters = {};
+      for (let c = 0; c < commCount; c++) {
+        const angle = (c / commCount) * 2 * Math.PI - Math.PI / 2;
+        commCenters[c] = {
+          x: 375 + 160 * Math.cos(angle),
+          y: 260 + 140 * Math.sin(angle)
+        };
+      }
+      currentData.nodes.forEach((node, idx) => {
+        let commId = 0;
+        communities.forEach(c => {
+          if (c.memberIds?.includes(node.id)) commId = c.id;
+        });
+        const center = commCenters[commId] || { x: 375, y: 260 };
+        const angle = (idx * 1.5);
+        const dist = 30 + (idx % 3) * 25;
+        positions[node.id] = {
+          x: center.x + dist * Math.cos(angle),
+          y: center.y + dist * Math.sin(angle)
+        };
+      });
+    }
+
+    return positions;
+  }, [currentData.nodes, layoutMode, communities]);
+
+  // Filtered nodes matching search query
+  const matchingNodeIds = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return currentData.nodes
+      .filter(n => n.name.toLowerCase().includes(q) || n.role.toLowerCase().includes(q) || n.dept.toLowerCase().includes(q))
+      .map(n => n.id);
+  }, [currentData.nodes, searchQuery]);
 
   const toggleResignedNode = (nodeId) => {
     if (customResignedNodes.includes(nodeId)) {
@@ -220,93 +288,90 @@ export default function App() {
     setSimulatedPropagation(null);
   };
 
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPos({
+      x: e.clientX - rect.left + 15,
+      y: e.clientY - rect.top + 15
+    });
+  };
+
   return (
     <div className="dashboard-container">
       {/* Sidebar Controls & ONA Metrics */}
       <aside className="sidebar">
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#06b6d4', fontWeight: 700 }}>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#06b6d4', fontWeight: 800, letterSpacing: '-0.02em' }}>
               🌐 MailInfluence-ONA
             </h2>
-            <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '12px', background: backendOnline ? '#064e3b' : '#374151', color: backendOnline ? '#34d399' : '#9ca3af', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '12px', background: backendOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(156, 163, 175, 0.15)', color: backendOnline ? '#34d399' : '#9ca3af', border: backendOnline ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(156, 163, 175, 0.3)', fontWeight: 600 }}>
               {backendOnline ? '🟢 Engine C11' : '⚪ Démo'}
             </span>
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Intelligence Réseau & Analyse Temporelle en C
+          <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
+            Intelligence Réseau & Théorie des Graphes en C
           </p>
         </div>
 
+        {/* Live Search Bar */}
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '10px', top: '7px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            🔍
+          </span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Rechercher un collaborateur, rôle, équipe..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{ position: 'absolute', right: '8px', top: '6px', background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* 8 Navigation Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', background: '#0b0f19', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <button 
-            className={`tab-btn ${activeTab === 'velocity' ? 'active' : ''}`}
-            onClick={() => setActiveTab('velocity')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', background: 'rgba(11, 15, 25, 0.8)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button className={`tab-btn ${activeTab === 'velocity' ? 'active' : ''}`} onClick={() => setActiveTab('velocity')}>
             📈 Vélocité
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'crashtest' ? 'active' : ''}`}
-            onClick={() => setActiveTab('crashtest')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'crashtest' ? 'active' : ''}`} onClick={() => setActiveTab('crashtest')}>
             🌪️ Crash
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'tribes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tribes')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'tribes' ? 'active' : ''}`} onClick={() => setActiveTab('tribes')}>
             🔮 Tribus
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`}
-            onClick={() => setActiveTab('bridges')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'bridges' ? 'active' : ''}`} onClick={() => setActiveTab('bridges')}>
             🌉 Ponts
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
-            onClick={() => setActiveTab('audit')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>
             📑 Audit
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
-            onClick={() => setActiveTab('influence')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`} onClick={() => setActiveTab('influence')}>
             🏆 Leaders
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
-            onClick={() => setActiveTab('busfactor')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`} onClick={() => setActiveTab('busfactor')}>
             ⚠️ Risque
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('silos')}
-            style={{ fontSize: '0.58rem', padding: '5px 1px' }}
-          >
+          <button className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`} onClick={() => setActiveTab('silos')}>
             🏢 Silos
           </button>
         </div>
 
-        {/* Tab 0: Vélocité & Analyse Temporelle (Sliding Window & Delta PageRank) */}
+        {/* Tab 0: Vélocité & Analyse Temporelle */}
         {activeTab === 'velocity' && temporal && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
-            {/* ROI Reorganisation Banner */}
             <div style={{
-              background: 'linear-gradient(135deg, #064e3b 0%, #0f172a 100%)',
+              background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
               padding: '10px 12px',
               borderRadius: '8px',
-              border: '1px solid #10b981'
+              border: '1px solid rgba(16, 185, 129, 0.5)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
@@ -317,7 +382,7 @@ export default function App() {
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '4px' }}>
-                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399' }}>
+                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#34d399' }}>
                   {temporal.deltaCrossDept >= 0 ? `+${temporal.deltaCrossDept.toFixed(1)}%` : `${temporal.deltaCrossDept.toFixed(1)}%`}
                 </span>
                 <span style={{ fontSize: '0.72rem', color: '#d1fae5' }}>
@@ -329,8 +394,7 @@ export default function App() {
               </p>
             </div>
 
-            {/* Time View Switcher */}
-            <div style={{ display: 'flex', gap: '4px', background: '#0b0f19', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'rgba(11, 15, 25, 0.8)', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
               <button
                 onClick={() => setTimeView('t1')}
                 style={{
@@ -381,7 +445,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* List of Dynamic Influence Metrics */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {temporal.metrics
                 .slice()
@@ -394,11 +457,11 @@ export default function App() {
                       if (nodeObj) setSelectedNode(nodeObj);
                     }}
                     style={{
-                      background: selectedNode?.id === item.nodeId ? '#1e293b' : 'var(--card-bg)',
+                      background: selectedNode?.id === item.nodeId ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)',
                       padding: '7px 9px',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      border: selectedNode?.id === item.nodeId ? '1px solid #10b981' : '1px solid #374151',
+                      border: selectedNode?.id === item.nodeId ? '1px solid #10b981' : '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease'
                     }}
                   >
@@ -425,11 +488,11 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Crash Test & Départs en Cascade (Tarjan SCC) */}
+        {/* Tab 1: Crash Test (Tarjan SCC) */}
         {activeTab === 'crashtest' && cascading && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
             <div style={{
-              background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
+              background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%)',
               padding: '10px 12px',
               borderRadius: '8px',
               border: `1px solid ${cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#ef4444' : '#f59e0b'}`
@@ -462,7 +525,7 @@ export default function App() {
               </p>
             </div>
 
-            <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ background: 'rgba(11, 15, 25, 0.8)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Départs Simulés:</span>
                 <strong style={{ color: '#ef4444' }}>{customResignedNodes.length} personnes</strong>
@@ -477,7 +540,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ background: '#111827', padding: '8px 10px', borderRadius: '8px', border: '1px solid #374151' }}>
+            <div style={{ background: 'rgba(17, 24, 39, 0.8)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fca5a5', display: 'block', marginBottom: '6px' }}>
                 Simuler le départ de collaborateurs :
               </span>
@@ -492,11 +555,11 @@ export default function App() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        background: isResigned ? '#450a0a' : '#1e293b',
+                        background: isResigned ? '#450a0a' : 'rgba(30, 41, 59, 0.7)',
                         padding: '5px 8px',
                         borderRadius: '4px',
                         cursor: 'pointer',
-                        border: isResigned ? '1px solid #ef4444' : '1px solid #374151'
+                        border: isResigned ? '1px solid #ef4444' : '1px solid var(--border-subtle)'
                       }}
                     >
                       <span style={{ fontSize: '0.72rem', color: isResigned ? '#fca5a5' : '#f3f4f6', textDecoration: isResigned ? 'line-through' : 'none' }}>
@@ -513,7 +576,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Tribus & Communautés Informelles (LPA Algorithm in C) */}
+        {/* Tab 2: Tribus Informelles (LPA) */}
         {activeTab === 'tribes' && communities && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -533,7 +596,7 @@ export default function App() {
                     padding: '8px 10px',
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    border: selectedCommunity === comm.id ? `1px solid ${getCommunityColor(comm.id)}` : '1px solid #374151',
+                    border: selectedCommunity === comm.id ? `1px solid ${getCommunityColor(comm.id)}` : '1px solid var(--border-subtle)',
                     transition: 'all 0.15s ease'
                   }}
                 >
@@ -570,7 +633,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 3: Ponts Informels & Boundary Spanners (Brandes O(V*E)) */}
+        {/* Tab 3: Ponts Informels (Brandes) */}
         {activeTab === 'bridges' && boundarySpanners && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -589,7 +652,7 @@ export default function App() {
                       padding: '8px 10px',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      border: selectedNode?.id === item.nodeId ? '1px solid #c084fc' : '1px solid #374151',
+                      border: selectedNode?.id === item.nodeId ? '1px solid #c084fc' : '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease'
                     }}
                   >
@@ -603,7 +666,7 @@ export default function App() {
                         color: item.isKeyBroker ? '#e9d5ff' : '#c7d2fe',
                         fontWeight: 600
                       }}>
-                        {item.isKeyBroker ? '🌉 CONNECTEUR CLÉ' : '🔗 PASSERELLE'}
+                        {item.isKeyBroker ? '🌉 CONNECTEUR' : '🔗 PASSERELLE'}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
@@ -617,11 +680,11 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 4: Audit de Santé Organisationnelle (Score 0-100) */}
+        {/* Tab 4: Audit de Santé Organisationnelle */}
         {activeTab === 'audit' && auditReport && (
           <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '290px', overflowY: 'auto' }}>
             <div style={{
-              background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
+              background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%)',
               padding: '10px 12px',
               borderRadius: '8px',
               border: '1px solid #06b6d4',
@@ -645,7 +708,7 @@ export default function App() {
               </span>
             </div>
 
-            <div style={{ background: '#0b0f19', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ background: 'rgba(11, 15, 25, 0.8)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Densité Globale:</span>
                 <strong>{auditReport.density.toFixed(1)}%</strong>
@@ -664,7 +727,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ background: '#111827', padding: '10px', borderRadius: '8px', border: '1px solid #374151' }}>
+            <div style={{ background: 'rgba(17, 24, 39, 0.8)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
               <h5 style={{ margin: '0 0 4px 0', color: '#f59e0b', fontSize: '0.74rem' }}>💡 Recommandations RH & Management</h5>
               <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.68rem', color: '#d1d5db', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {auditReport.recommendations.map((rec, i) => (
@@ -695,7 +758,7 @@ export default function App() {
                       padding: '8px 12px',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      border: selectedNode?.id === item.id ? '1px solid var(--accent-cyan)' : '1px solid #374151',
+                      border: selectedNode?.id === item.id ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease'
                     }}
                   >
@@ -712,7 +775,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 6: Bus Factor & Risque de Surcharge (Max-Heap C) */}
+        {/* Tab 6: Bus Factor & Risque de Surcharge */}
         {activeTab === 'busfactor' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -721,7 +784,7 @@ export default function App() {
             </div>
             <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '290px', overflowY: 'auto' }}>
               {busFactorList.map((item, idx) => {
-                const nodeObj = currentData.nodes.find(n => n.id === item.nodeId) || { id: item.nodeId, name: item.name, dept: item.dept, role: item.role, pageRank: 0.07, betweenness: 10.0 };
+                const nodeObj = currentData.nodes.find(n => n.id === item.nodeId) || { id: item.nodeId, name: item.name, dept: item.dept, role: item.role, pageRank: 0.07, betweenness: 1.0 };
                 return (
                   <div
                     key={idx}
@@ -731,7 +794,7 @@ export default function App() {
                       padding: '8px 12px',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      border: selectedNode?.id === item.nodeId ? '1px solid #f59e0b' : '1px solid #374151',
+                      border: selectedNode?.id === item.nodeId ? '1px solid #f59e0b' : '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease'
                     }}
                   >
@@ -759,7 +822,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 7: Silos Organisationnels & Isolation (Homophily C) */}
+        {/* Tab 7: Silos Organisationnels */}
         {activeTab === 'silos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -772,10 +835,10 @@ export default function App() {
                   key={idx}
                   onClick={() => { setSelectedDept(selectedDept === silo.dept ? null : silo.dept); setSelectedCommunity(null); }}
                   style={{
-                    background: selectedDept === silo.dept ? '#1f2937' : '#0b0f19',
+                    background: selectedDept === silo.dept ? '#1f2937' : 'rgba(11, 15, 25, 0.8)',
                     padding: '8px 10px',
                     borderRadius: '6px',
-                    border: selectedDept === silo.dept ? '1px solid #38bdf8' : '1px solid #1f2937',
+                    border: selectedDept === silo.dept ? '1px solid #38bdf8' : '1px solid var(--border-subtle)',
                     cursor: 'pointer'
                   }}
                 >
@@ -815,9 +878,9 @@ export default function App() {
 
         {/* Section Inspecteur de Nœud */}
         {selectedNode && (
-          <div style={{ background: '#111827', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
+          <div style={{ background: 'rgba(17, 24, 39, 0.95)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h4 style={{ margin: 0, color: '#c084fc', fontSize: '0.85rem' }}>🔎 Inspecteur de Collaborateur</h4>
+              <h4 style={{ margin: 0, color: '#c084fc', fontSize: '0.85rem' }}>🔎 Inspecteur Collaborateur</h4>
               <button 
                 onClick={() => setSelectedNode(null)} 
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -873,7 +936,7 @@ export default function App() {
 
         {/* Résultats des Simulations */}
         {(simulatedPropagation || resignationImpact) && (
-          <div style={{ background: '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid #0284c7' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.95)', padding: '10px', borderRadius: '8px', border: '1px solid #0284c7' }}>
             {simulatedPropagation && (
               <div>
                 <h5 style={{ margin: '0 0 4px 0', color: '#38bdf8', fontSize: '0.8rem' }}>📢 Résultat BFS Propagation</h5>
@@ -901,45 +964,121 @@ export default function App() {
       </aside>
 
       {/* Main Interactive Graph Visualizer Canvas Area */}
-      <main className="graph-canvas">
-        {/* Header with Benchmark stats */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+      <main className="graph-canvas" onMouseMove={handleMouseMove}>
+        {/* Header Controls & Benchmark */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#f9fafb', fontWeight: 700 }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#f9fafb', fontWeight: 800, letterSpacing: '-0.02em' }}>
               🕸️ Visualiseur Interactif du Graphe ONA
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               {activeTab === 'velocity' ? `Mode Analyse Temporelle (Vue: ${timeView.toUpperCase()}) : Leaders émergents et dérivée d'influence.` :
                activeTab === 'crashtest' ? `Mode Crash Test : ${customResignedNodes.length} départs simulés (Composantes de Tarjan).` :
-               selectedCommunity !== null ? `Filtrage actif sur la communauté informelle : Tribu ${selectedCommunity + 1}` : 
+               selectedCommunity !== null ? `Filtrage actif sur : Tribu ${selectedCommunity + 1}` : 
                selectedDept ? `Filtrage actif sur : ${selectedDept}` : 
-               'Cliquez sur une tribu ou un collaborateur pour analyser les clans et les flux d\'influence.'}
+               'Survolez un employé ou une liaison pour inspecter les métriques en temps réel.'}
             </p>
           </div>
 
-          {/* Benchmark Badge */}
-          {benchmark && (
-            <div style={{
-              background: '#111827',
-              border: '1px solid #06b6d4',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              fontSize: '0.78rem'
-            }}>
-              <span>⚡ <strong>{benchmark.rowsProcessed.toLocaleString()}</strong> emails</span>
-              <span style={{ color: 'var(--border-subtle)' }}>|</span>
-              <span>Parsing: <strong style={{ color: '#38bdf8' }}>{benchmark.parseTimeMs.toFixed(2)} ms</strong></span>
-              <span style={{ color: 'var(--border-subtle)' }}>|</span>
-              <span>PageRank: <strong style={{ color: '#34d399' }}>{benchmark.pageRankTimeMs.toFixed(2)} ms</strong></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Layout Mode Selector */}
+            <div style={{ display: 'flex', background: 'rgba(17, 24, 39, 0.8)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <button
+                onClick={() => setLayoutMode('circle')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: layoutMode === 'circle' ? '#1e293b' : 'transparent',
+                  color: layoutMode === 'circle' ? '#38bdf8' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                ⭕ Roue
+              </button>
+              <button
+                onClick={() => setLayoutMode('departments')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: layoutMode === 'departments' ? '#1e293b' : 'transparent',
+                  color: layoutMode === 'departments' ? '#38bdf8' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                🏢 Équipes
+              </button>
+              <button
+                onClick={() => setLayoutMode('tribes')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: layoutMode === 'tribes' ? '#1e293b' : 'transparent',
+                  color: layoutMode === 'tribes' ? '#38bdf8' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                🔮 Tribus
+              </button>
             </div>
-          )}
+
+            {/* Benchmark Badge */}
+            {benchmark && (
+              <div style={{
+                background: 'rgba(17, 24, 39, 0.85)',
+                border: '1px solid rgba(6, 182, 212, 0.4)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '0.75rem',
+                backdropFilter: 'blur(8px)'
+              }}>
+                <span>⚡ <strong>{benchmark.rowsProcessed.toLocaleString()}</strong> emails</span>
+                <span style={{ color: 'var(--border-subtle)' }}>|</span>
+                <span>Parsing: <strong style={{ color: '#38bdf8' }}>{benchmark.parseTimeMs.toFixed(2)} ms</strong></span>
+                <span style={{ color: 'var(--border-subtle)' }}>|</span>
+                <span>PageRank: <strong style={{ color: '#34d399' }}>{benchmark.pageRankTimeMs.toFixed(2)} ms</strong></span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Dynamic Interactive SVG Graph Visualization */}
-        <div style={{ flex: 1, background: '#0b0f19', borderRadius: '12px', border: '1px solid #1f2937', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: 'rgba(11, 15, 25, 0.65)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid var(--border-subtle)', position: 'relative', overflow: 'hidden' }}>
+          
+          {/* Real-time Hover Tooltip */}
+          {hoveredNode && (
+            <div className="graph-tooltip" style={{ left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` }}>
+              <div style={{ fontWeight: 700, color: '#38bdf8', fontSize: '0.82rem' }}>{hoveredNode.name}</div>
+              <div style={{ color: '#cbd5e1', fontSize: '0.72rem' }}>{hoveredNode.role} • <span style={{ color: getDeptColor(hoveredNode.dept) }}>{hoveredNode.dept}</span></div>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '4px', paddingTop: '4px', fontSize: '0.68rem', display: 'flex', gap: '8px' }}>
+                <span>PR: <strong>{hoveredNode.pageRank?.toFixed(4)}</strong></span>
+                <span>Betweenness: <strong>{hoveredNode.betweenness?.toFixed(1)}</strong></span>
+              </div>
+            </div>
+          )}
+
+          {hoveredEdge && (
+            <div className="graph-tooltip" style={{ left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` }}>
+              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.78rem' }}>
+                {hoveredEdge.srcNode?.name} ➔ {hoveredEdge.tgtNode?.name}
+              </div>
+              <div style={{ color: '#38bdf8', fontSize: '0.72rem', marginTop: '2px' }}>
+                Volume échangé: <strong>{hoveredEdge.weight?.toFixed(1)} emails</strong>
+              </div>
+            </div>
+          )}
+
           <svg width="100%" height="100%" viewBox="0 0 750 520" style={{ width: '100%', height: '100%' }}>
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -952,9 +1091,8 @@ export default function App() {
 
             {/* Render Edges */}
             {currentData.edges.map((edge, idx) => {
-              const totalNodes = currentData.nodes.length;
-              const sourcePos = getNodePos(edge.source % totalNodes, totalNodes);
-              const targetPos = getNodePos(edge.target % totalNodes, totalNodes);
+              const sourcePos = nodePositions[edge.source] || { x: 375, y: 260 };
+              const targetPos = nodePositions[edge.target] || { x: 375, y: 260 };
 
               const srcNode = currentData.nodes[edge.source];
               const tgtNode = currentData.nodes[edge.target];
@@ -969,9 +1107,11 @@ export default function App() {
                 activeCommunityObj.memberIds?.includes(edge.source) && 
                 activeCommunityObj.memberIds?.includes(edge.target);
 
-              const isHighlighted = (selectedNode && (selectedNode.id === edge.source || selectedNode.id === edge.target)) ||
-                                    (selectedDept && (srcNode?.dept === selectedDept || tgtNode?.dept === selectedDept)) ||
-                                    isCommunityEdge;
+              const isMatchSearch = matchingNodeIds.length > 0 && (matchingNodeIds.includes(edge.source) || matchingNodeIds.includes(edge.target));
+              const isSelected = (selectedNode && (selectedNode.id === edge.source || selectedNode.id === edge.target)) ||
+                                 (selectedDept && (srcNode?.dept === selectedDept || tgtNode?.dept === selectedDept)) ||
+                                 isCommunityEdge ||
+                                 isMatchSearch;
 
               return (
                 <line
@@ -980,20 +1120,21 @@ export default function App() {
                   y1={sourcePos.y}
                   x2={targetPos.x}
                   y2={targetPos.y}
-                  stroke={isBrokenEdge ? '#7f1d1d' : (isHighlighted ? (isCommunityEdge ? getCommunityColor(selectedCommunity) : (isInternal ? '#3b82f6' : '#38bdf8')) : '#334155')}
+                  stroke={isBrokenEdge ? '#7f1d1d' : (isSelected ? (isCommunityEdge ? getCommunityColor(selectedCommunity) : (isInternal ? '#3b82f6' : '#38bdf8')) : '#334155')}
                   strokeWidth={isBrokenEdge ? 1.0 : (edge.weight ? Math.max(1.2, Math.min(4.0, edge.weight * 0.8)) : 1.5)}
                   strokeDasharray={isBrokenEdge ? '2,4' : (isInternal ? 'none' : '4,2')}
-                  markerEnd={isBrokenEdge ? 'none' : (isHighlighted ? 'url(#arrow-highlight)' : 'url(#arrow)')}
-                  opacity={isBrokenEdge ? 0.25 : (selectedNode || selectedDept || selectedCommunity !== null ? (isHighlighted ? 0.95 : 0.08) : 0.65)}
-                  style={{ transition: 'all 0.2s ease' }}
+                  markerEnd={isBrokenEdge ? 'none' : (isSelected ? 'url(#arrow-highlight)' : 'url(#arrow)')}
+                  opacity={isBrokenEdge ? 0.25 : (selectedNode || selectedDept || selectedCommunity !== null || matchingNodeIds.length > 0 ? (isSelected ? 0.95 : 0.08) : 0.65)}
+                  onMouseEnter={() => setHoveredEdge({ ...edge, srcNode, tgtNode })}
+                  onMouseLeave={() => setHoveredEdge(null)}
+                  style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
                 />
               );
             })}
 
             {/* Render Nodes */}
-            {currentData.nodes.map((node, idx) => {
-              const totalNodes = currentData.nodes.length;
-              const pos = getNodePos(idx, totalNodes);
+            {currentData.nodes.map((node) => {
+              const pos = nodePositions[node.id] || { x: 375, y: 260 };
 
               const isResigned = activeTab === 'crashtest' && customResignedNodes.includes(node.id);
               const activeCommunityObj = selectedCommunity !== null ? communities.find(c => c.id === selectedCommunity) : null;
@@ -1001,10 +1142,12 @@ export default function App() {
 
               const temporalMetric = temporal?.metrics?.find(m => m.nodeId === node.id);
               const isRisingLeader = temporalMetric && temporalMetric.deltaGrowthPct >= 5.0;
+              const isMatchSearch = matchingNodeIds.includes(node.id);
 
               const isSelected = selectedNode?.id === node.id || 
                                  (selectedDept && node.dept === selectedDept) ||
-                                 isNodeInCommunity;
+                                 isNodeInCommunity ||
+                                 isMatchSearch;
 
               let nodePageRank = node.pageRank || 0.06;
               if (activeTab === 'velocity' && temporalMetric) {
@@ -1028,7 +1171,9 @@ export default function App() {
                       setSelectedNode(node);
                       setSelectedDept(null);
                     }
-                  }} 
+                  }}
+                  onMouseEnter={() => setHoveredNode(node)}
+                  onMouseLeave={() => setHoveredNode(null)}
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Glowing Green ring for Rising Leaders in Velocity Mode */}
@@ -1080,7 +1225,7 @@ export default function App() {
                     textAnchor="middle"
                     dy="4"
                     fill={isResigned ? '#fca5a5' : '#f9fafb'}
-                    fontSize={totalNodes > 10 ? '9.5' : '11'}
+                    fontSize="10"
                     fontWeight="700"
                     style={{ pointerEvents: 'none' }}
                   >
@@ -1090,7 +1235,7 @@ export default function App() {
                     textAnchor="middle"
                     dy={radius + 14}
                     fill={isResigned ? '#f87171' : deptColor}
-                    fontSize={totalNodes > 10 ? '8.5' : '10'}
+                    fontSize="9"
                     fontWeight="600"
                     style={{ pointerEvents: 'none' }}
                   >
