@@ -9,6 +9,7 @@ Elle transforme le flux d'emails d'entreprise en un **Graphe d'Influence et de C
 ## 🎯 Pourquoi le Backend en C ?
 Le moteur backend a été conçu de zéro en C pur pour garantir une **complexité minimale**, une **performance maximale** et un contrôle total sur les structures de données bas niveau (pointeurs, allocations dynamiques, gestion de la mémoire) :
 
+* **📑 Générateur de Rapport d'Audit ONA & Score Global de Santé (0-100 en C) :** Calcul d'un indice composite évaluant la densité, la réciprocité bilatérale, la connectivité transversale et la résilience face aux surcharges, avec génération automatique de recommandations RH & management.
 * **⚡ Ingestion CSV Haute Performance & Table de Hachage en C (`hashtable.c`, `csv_parser.c`) :** Indexation en temps constant $O(1)$ des adresses emails via l'algorithme `djb2`. Capable de traiter des milliers d'emails en moins de 2 millisecondes.
 * **📊 Structure de Graphe personnalisée (`Graph`, `Node`, `Edge`) :** Listes d'adjacence et tableaux dynamiques réallocables.
 * **⛰️ Tas Binaire Max (`Max-Heap`) :** Implémentation manuelle en C (`heap.c`) pour classer et extraire instantanément le Top-K des employés en surcharge cognitive (Bus Factor).
@@ -27,9 +28,10 @@ Le moteur backend a été conçu de zéro en C pur pour garantir une **complexit
 
 ## 📊 Benchmark de Performance (Moteur C11)
 Sur un dataset de **2 500 logs d'emails d'entreprise** :
-* **Parsing & Indexation Hash Table :** ~1.7 ms
-* **Calcul PageRank (25 itérations) :** ~0.3 ms
-* **Temps Total d'Exécution :** < 3 ms
+* **Parsing & Indexation Hash Table :** ~1.8 ms
+* **Calcul PageRank (25 itérations) :** ~0.4 ms
+* **Génération du Rapport d'Audit & Santé ONA :** ~0.2 ms
+* **Temps Total d'Exécution :** < 2.5 ms
 
 ---
 

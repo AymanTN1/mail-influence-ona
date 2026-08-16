@@ -44,6 +44,19 @@ typedef struct {
     double matrix[MAX_DEPTS][MAX_DEPTS];
 } SiloReport;
 
+// Rapport Global d'Audit de Santé Organisationnelle (Score 0-100)
+typedef struct {
+    double density;                  // Densité du réseau (0.0% à 100.0%)
+    double reciprocity;              // Taux de réciprocité bilatérale (0.0% à 100.0%)
+    double cross_dept_connectivity; // Connectivité inter-équipes (0.0% à 100.0%)
+    double resilience_score;        // Résilience face aux surcharges (0.0% à 100.0%)
+    double health_score;            // Score Global ONA (0.0 à 100.0)
+    char grade[8];                  // "A+", "A", "B", "C", "D"
+    char executive_summary[256];
+    char recommendations[3][256];
+    int num_recommendations;
+} AuditReport;
+
 // Calcul de la Centralité PageRank (Power Iteration)
 void calculate_pagerank(Graph* g, int iterations, double damping_factor);
 
@@ -55,6 +68,9 @@ SiloReport analyze_department_silos(Graph* g);
 
 // Détection du Bus Factor & Risque de Surcharge via Tas Binaire (Max-Heap)
 BusFactorReport calculate_bus_factor_and_overload(Graph* g);
+
+// Générateur du Rapport d'Audit & Score de Santé Organisationnelle (0-100)
+AuditReport generate_ona_audit_report(Graph* g);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);

@@ -8,16 +8,16 @@ export default function App() {
   const [simulatedPropagation, setSimulatedPropagation] = useState(null);
   const [resignationImpact, setResignationImpact] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
-  const [activeTab, setActiveTab] = useState('influence'); // 'influence' | 'busfactor' | 'silos'
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'influence' | 'busfactor' | 'silos'
 
   // Mode secours (Mock data)
   const mockData = {
     nodes: [
-      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.2193, betweenness: 3.0 },
-      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.1563, betweenness: 3.0 },
-      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.2930, betweenness: 4.0 },
-      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.1629, betweenness: 2.0 },
-      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.1685, betweenness: 2.0 }
+      { id: 0, name: 'Sarah Connor', email: 'sarah@corp.com', dept: 'Engineering', role: 'CTO', pageRank: 0.0654, betweenness: 324.0 },
+      { id: 1, name: 'Alex Mercer', email: 'alex@corp.com', dept: 'Executive', role: 'CEO', pageRank: 0.0666, betweenness: 340.0 },
+      { id: 2, name: 'David Miller', email: 'david@corp.com', dept: 'Engineering', role: 'Tech Lead', pageRank: 0.0711, betweenness: 346.0 },
+      { id: 3, name: 'Claire Bennet', email: 'claire@corp.com', dept: 'HR', role: 'HR Director', pageRank: 0.0644, betweenness: 332.0 },
+      { id: 4, name: 'Mark Sloan', email: 'mark@corp.com', dept: 'Sales', role: 'VP Sales', pageRank: 0.0642, betweenness: 302.0 }
     ],
     edges: [
       { source: 0, target: 2, weight: 4.5 },
@@ -29,25 +29,38 @@ export default function App() {
       { source: 2, target: 1, weight: 1.2 }
     ],
     silos: [
-      { dept: 'Engineering', members: 2, internalFlux: 8.3, externalFlux: 5.7, isolationScore: 59.3, isSilo: true },
-      { dept: 'Executive', members: 1, internalFlux: 0.0, externalFlux: 6.7, isolationScore: 0.0, isSilo: false },
-      { dept: 'HR', members: 1, internalFlux: 0.0, externalFlux: 4.8, isolationScore: 0.0, isSilo: false },
-      { dept: 'Sales', members: 1, internalFlux: 0.0, externalFlux: 3.8, isolationScore: 0.0, isSilo: false }
+      { dept: 'Engineering', members: 3, internalFlux: 237.9, externalFlux: 2469.4, isolationScore: 8.8, isSilo: false },
+      { dept: 'Executive', members: 2, internalFlux: 41.9, externalFlux: 1847.3, isolationScore: 2.2, isSilo: false },
+      { dept: 'HR', members: 2, internalFlux: 67.7, externalFlux: 1783.7, isolationScore: 3.7, isSilo: false },
+      { dept: 'Sales', members: 2, internalFlux: 53.9, externalFlux: 1753.2, isolationScore: 3.0, isSilo: false }
     ],
     busFactor: [
-      { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 6.5, outFlux: 5.0, overloadScore: 16.8, isCritical: true },
-      { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', inFlux: 3.8, outFlux: 7.0, overloadScore: 10.2, isCritical: false },
-      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 3.7, outFlux: 3.0, overloadScore: 9.8, isCritical: false },
-      { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', inFlux: 3.0, outFlux: 1.8, overloadScore: 7.2, isCritical: false },
-      { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', inFlux: 1.8, outFlux: 2.0, overloadScore: 5.4, isCritical: false }
+      { nodeId: 2, name: 'David Miller', dept: 'Engineering', role: 'Tech Lead', inFlux: 527.7, outFlux: 490.7, overloadScore: 1156.6, isCritical: true },
+      { nodeId: 0, name: 'Sarah Connor', dept: 'Engineering', role: 'CTO', inFlux: 482.2, outFlux: 471.3, overloadScore: 1052.3, isCritical: true },
+      { nodeId: 1, name: 'Alex Mercer', dept: 'Executive', role: 'CEO', inFlux: 488.9, outFlux: 504.4, overloadScore: 1070.3, isCritical: true },
+      { nodeId: 3, name: 'Claire Bennet', dept: 'HR', role: 'HR Director', inFlux: 472.0, outFlux: 488.2, overloadScore: 1027.0, isCritical: true },
+      { nodeId: 4, name: 'Mark Sloan', dept: 'Sales', role: 'VP Sales', inFlux: 470.3, outFlux: 425.6, overloadScore: 1028.6, isCritical: true }
     ],
     benchmark: {
       rowsProcessed: 2500,
       totalNodes: 15,
       totalEdges: 2500,
-      parseTimeMs: 1.15,
-      pageRankTimeMs: 0.42,
-      totalTimeMs: 1.57
+      parseTimeMs: 1.73,
+      pageRankTimeMs: 0.35,
+      totalTimeMs: 2.17
+    },
+    auditReport: {
+      healthScore: 82.5,
+      grade: 'A',
+      density: 100.0,
+      reciprocity: 100.0,
+      crossDeptConnectivity: 94.2,
+      resilienceScore: 0.0,
+      executiveSummary: 'Organisation fluide avec une excellente dynamique de collaboration.',
+      recommendations: [
+        'Rééquilibrer la charge des 15 employés en Bus Factor critique pour sécuriser les projets.',
+        'Maintenir les rituels actuels et auditer l\'évolution des flux chaque trimestre.'
+      ]
     }
   };
 
@@ -70,6 +83,7 @@ export default function App() {
   const silosList = currentData.silos || mockData.silos;
   const busFactorList = currentData.busFactor || mockData.busFactor;
   const benchmark = currentData.benchmark || mockData.benchmark;
+  const auditReport = currentData.auditReport || mockData.auditReport;
 
   const getBadgeClass = (dept) => {
     switch (dept) {
@@ -146,31 +160,105 @@ export default function App() {
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: 0 }}>
-            Analyse Réseau & Intelligence Organisationnelle
+            Audit & Intelligence des Réseaux d'Entreprise
           </p>
         </div>
 
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', background: '#0b0f19', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#0b0f19', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <button 
+            className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
+            onClick={() => setActiveTab('audit')}
+            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
+          >
+            📑 Audit
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'influence' ? 'active' : ''}`}
             onClick={() => setActiveTab('influence')}
+            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
           >
             🏆 Leaders
           </button>
           <button 
             className={`tab-btn ${activeTab === 'busfactor' ? 'active' : ''}`}
             onClick={() => setActiveTab('busfactor')}
+            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
           >
-            ⚠️ Bus Factor
+            ⚠️ Surcharge
           </button>
           <button 
             className={`tab-btn ${activeTab === 'silos' ? 'active' : ''}`}
             onClick={() => setActiveTab('silos')}
+            style={{ fontSize: '0.72rem', padding: '6px 4px' }}
           >
             🏢 Silos
           </button>
         </div>
+
+        {/* Tab 0: Audit de Santé Organisationnelle (Score 0-100) */}
+        {activeTab === 'audit' && auditReport && (
+          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto' }}>
+            {/* Score Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
+              padding: '14px',
+              borderRadius: '8px',
+              border: '1px solid #06b6d4',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Score Global de Santé Réseau
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#38bdf8', margin: '4px 0' }}>
+                {auditReport.healthScore.toFixed(1)} <span style={{ fontSize: '1rem', color: '#9ca3af' }}>/ 100</span>
+              </div>
+              <span style={{
+                fontSize: '0.72rem',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                background: auditReport.healthScore >= 75 ? '#064e3b' : '#7c2d12',
+                color: auditReport.healthScore >= 75 ? '#6ee7b7' : '#fdba74',
+                fontWeight: 700
+              }}>
+                GRADE : {auditReport.grade}
+              </span>
+              <p style={{ fontSize: '0.75rem', color: '#e2e8f0', margin: '10px 0 0 0', lineHeight: 1.4 }}>
+                {auditReport.executiveSummary}
+              </p>
+            </div>
+
+            {/* Sub-scores breakdown */}
+            <div style={{ background: '#0b0f19', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Densité Globale:</span>
+                <strong>{auditReport.density.toFixed(1)}%</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Réciprocité Bilatérale:</span>
+                <strong>{auditReport.reciprocity.toFixed(1)}%</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Connectivité Transversale:</span>
+                <strong>{auditReport.crossDeptConnectivity.toFixed(1)}%</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Résilience Bus Factor:</span>
+                <strong>{auditReport.resilienceScore.toFixed(1)}%</strong>
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            <div style={{ background: '#111827', padding: '12px', borderRadius: '8px', border: '1px solid #374151' }}>
+              <h5 style={{ margin: '0 0 6px 0', color: '#f59e0b', fontSize: '0.78rem' }}>💡 Recommandations RH & Management</h5>
+              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.72rem', color: '#d1d5db', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {auditReport.recommendations.map((rec, i) => (
+                  <li key={i}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Leaders Informels (PageRank) */}
         {activeTab === 'influence' && (

@@ -85,12 +85,34 @@ static void send_json_response(SOCKET client_fd, Graph* g, BenchmarkResult* benc
             "    \"parseTimeMs\": %.2f,\n"
             "    \"pageRankTimeMs\": %.2f,\n"
             "    \"totalTimeMs\": %.2f\n"
-            "  }\n}\n",
+            "  },\n",
             bench->rows_processed, bench->total_nodes, bench->total_edges,
             bench->parse_time_ms, bench->pagerank_time_ms, bench->total_time_ms);
     } else {
-        offset += snprintf(response_body + offset, buf_size - offset, "  ]\n}\n");
+        offset += snprintf(response_body + offset, buf_size - offset, "  ],\n");
     }
+
+    AuditReport audit = generate_ona_audit_report(g);
+    offset += snprintf(response_body + offset, buf_size - offset, "  \"auditReport\": {\n");
+    offset += snprintf(response_body + offset, buf_size - offset,
+        "    \"healthScore\": %.1f,\n"
+        "    \"grade\": \"%s\",\n"
+        "    \"density\": %.1f,\n"
+        "    \"reciprocity\": %.1f,\n"
+        "    \"crossDeptConnectivity\": %.1f,\n"
+        "    \"resilienceScore\": %.1f,\n"
+        "    \"executiveSummary\": \"%s\",\n"
+        "    \"recommendations\": [\n",
+        audit.health_score, audit.grade, audit.density, audit.reciprocity,
+        audit.cross_dept_connectivity, audit.resilience_score, audit.executive_summary);
+
+    for (int r = 0; r < audit.num_recommendations; r++) {
+        offset += snprintf(response_body + offset, buf_size - offset,
+            "      \"%s\"%s\n", audit.recommendations[r],
+            (r < audit.num_recommendations - 1) ? "," : "");
+    }
+
+    offset += snprintf(response_body + offset, buf_size - offset, "    ]\n  }\n}\n");
 
     int total_len = snprintf(full_response, buf_size + 1024,
         "HTTP/1.1 200 OK\r\n"

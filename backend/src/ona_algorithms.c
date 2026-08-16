@@ -249,4 +249,105 @@ BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
     return report;
 }
 
+// Générateur du Rapport d'Audit & Score de Santé Organisationnelle (0-100)
+AuditReport generate_ona_audit_report(Graph* g) {
+    AuditReport report;
+    memset(&report, 0, sizeof(AuditReport));
+
+    if (!g || g->num_nodes < 2) {
+        report.health_score = 0.0;
+        strcpy(report.grade, "N/A");
+        strcpy(report.executive_summary, "Données insuffisantes pour un audit.");
+        return report;
+    }
+
+    int N = g->num_nodes;
+    int E = g->num_edges;
+
+    // 1. Densité du Réseau (D)
+    double max_edges = (double)(N * (N - 1));
+    report.density = (max_edges > 0) ? ((double)E / max_edges) * 100.0 : 0.0;
+    if (report.density > 100.0) report.density = 100.0;
+
+    // 2. Taux de Réciprocité Bilatérale (R)
+    int reciprocal_count = 0;
+    int max_check = (E > 500) ? 500 : E; // Vérification optimisée
+    for (int i = 0; i < max_check; i++) {
+        int u = g->edges[i].source;
+        int v = g->edges[i].target;
+        for (int j = 0; j < max_check; j++) {
+            if (i != j && g->edges[j].source == v && g->edges[j].target == u) {
+                reciprocal_count++;
+                break;
+            }
+        }
+    }
+    report.reciprocity = (max_check > 0) ? ((double)reciprocal_count / max_check) * 100.0 : 0.0;
+
+    // 3. Connectivité Inter-Équipes (Cross-Department)
+    SiloReport silos = analyze_department_silos(g);
+    double total_internal = 0.0;
+    double total_external = 0.0;
+    for (int d = 0; d < silos.num_depts; d++) {
+        total_internal += silos.depts[d].internal_flux;
+        total_external += silos.depts[d].external_flux;
+    }
+    double total_flux = total_internal + total_external;
+    report.cross_dept_connectivity = (total_flux > 0.0) ? (total_external / total_flux) * 100.0 : 0.0;
+
+    // 4. Résilience Bus Factor
+    BusFactorReport bf = calculate_bus_factor_and_overload(g);
+    int critical_count = 0;
+    for (int b = 0; b < bf.count; b++) {
+        if (bf.members[b].is_critical) critical_count++;
+    }
+    report.resilience_score = (N > 0) ? (1.0 - ((double)critical_count / N)) * 100.0 : 100.0;
+    if (report.resilience_score < 0.0) report.resilience_score = 0.0;
+
+    // 5. Score Global ONA (0-100)
+    double density_subscore = (report.density >= 5.0 && report.density <= 70.0) ? 25.0 : 15.0;
+    double reciprocity_subscore = (report.reciprocity / 100.0) * 25.0;
+    double cross_dept_subscore = (report.cross_dept_connectivity / 100.0) * 25.0;
+    double resilience_subscore = (report.resilience_score / 100.0) * 25.0;
+
+    report.health_score = density_subscore + reciprocity_subscore + cross_dept_subscore + resilience_subscore;
+    if (report.health_score > 100.0) report.health_score = 100.0;
+
+    // 6. Grade & Recommandations
+    if (report.health_score >= 80.0) {
+        strcpy(report.grade, "A");
+        strcpy(report.executive_summary, "Organisation fluide avec une excellente dynamique de collaboration.");
+    } else if (report.health_score >= 65.0) {
+        strcpy(report.grade, "B");
+        strcpy(report.executive_summary, "Bonne collaboration d'ensemble avec des axes d'amélioration ciblés.");
+    } else if (report.health_score >= 50.0) {
+        strcpy(report.grade, "C");
+        strcpy(report.executive_summary, "Risques de surcharge et de silos nécessitant un suivi managérial.");
+    } else {
+        strcpy(report.grade, "D");
+        strcpy(report.executive_summary, "Réseau organisationnel fragile et fragmenté.");
+    }
+
+    report.num_recommendations = 0;
+    if (critical_count > 0 && report.num_recommendations < 3) {
+        snprintf(report.recommendations[report.num_recommendations++], 256,
+            "Rééquilibrer la charge des %d employés en Bus Factor critique pour sécuriser les projets.", critical_count);
+    }
+    if (report.cross_dept_connectivity < 60.0 && report.num_recommendations < 3) {
+        snprintf(report.recommendations[report.num_recommendations++], 256,
+            "Mettre en place des ponts de communication pour décloisonner les équipes isolées.");
+    }
+    if (report.reciprocity < 50.0 && report.num_recommendations < 3) {
+        snprintf(report.recommendations[report.num_recommendations++], 256,
+            "Encourager le feedback bilatéral pour renforcer l'engagement des collaborateurs.");
+    }
+    if (report.num_recommendations == 0) {
+        snprintf(report.recommendations[report.num_recommendations++], 256,
+            "Maintenir les rituels actuels et auditer l'évolution des flux chaque trimestre.");
+    }
+
+    return report;
+}
+
+
 

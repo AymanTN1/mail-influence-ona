@@ -60,7 +60,26 @@ int main(int argc, char* argv[]) {
                bf.members[b].is_critical ? "🚨 [BUS FACTOR CRITIQUE]" : "🟢 [CHARGE NORMALE]");
     }
 
-    // 6. Démonstration des Simulations (Queue BFS & Graph)
+    // 6. Rapport d'Audit Global de Santé Organisationnelle (Score 0-100)
+    printf("\n======================================================================\n");
+    printf(" 📑 RAPPORT D'AUDIT DE SANTÉ ORGANISATIONNELLE (ONA C ENGINE)\n");
+    printf("======================================================================\n");
+    AuditReport audit = generate_ona_audit_report(g);
+    printf(" 🎯 SCORE GLOBAL : %.1f / 100  [GRADE : %s]\n", audit.health_score, audit.grade);
+    printf(" 📋 Résumé Exécutif: %s\n", audit.executive_summary);
+    printf("----------------------------------------------------------------------\n");
+    printf("  - Densité du Réseau        : %5.1f%% (Degré de maillage global)\n", audit.density);
+    printf("  - Taux de Réciprocité      : %5.1f%% (Communication bilatérale & confiance)\n", audit.reciprocity);
+    printf("  - Connectivité Transversale: %5.1f%% (Échanges inter-départements)\n", audit.cross_dept_connectivity);
+    printf("  - Résilience Bus Factor    : %5.1f%% (Sécurité face aux goulots)\n", audit.resilience_score);
+    printf("----------------------------------------------------------------------\n");
+    printf(" 💡 RECOMMANDATIONS RH & MANAGEMENT :\n");
+    for (int r = 0; r < audit.num_recommendations; r++) {
+        printf("   %d. %s\n", r + 1, audit.recommendations[r]);
+    }
+    printf("======================================================================\n");
+
+    // 7. Démonstration des Simulations (Queue BFS & Graph)
     if (g->num_nodes > 0) {
         simulate_propagation(g, 0, 3);
         simulate_resignation(g, 0);
