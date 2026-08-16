@@ -191,3 +191,62 @@ SiloReport analyze_department_silos(Graph* g) {
     return report;
 }
 
+// Détection du Bus Factor & Risque de Surcharge via Tas Binaire (Max-Heap)
+BusFactorReport calculate_bus_factor_and_overload(Graph* g) {
+    BusFactorReport report;
+    memset(&report, 0, sizeof(BusFactorReport));
+
+    if (!g || g->num_nodes == 0) return report;
+
+    int N = g->num_nodes;
+    double* in_flux = (double*)calloc(N, sizeof(double));
+    double* out_flux = (double*)calloc(N, sizeof(double));
+    int* in_deg = (int*)calloc(N, sizeof(int));
+
+    // 1. Calculer les flux entrants et sortants pour chaque employé
+    for (int e = 0; e < g->num_edges; e++) {
+        int src = g->edges[e].source;
+        int tgt = g->edges[e].target;
+        double w = g->edges[e].weight;
+
+        out_flux[src] += w;
+        in_flux[tgt] += w;
+        in_deg[tgt]++;
+    }
+
+    // 2. Insérer dans le Tas Binaire Max (Max-Heap)
+    MaxHeap* heap = create_max_heap(N);
+    for (int i = 0; i < N; i++) {
+        double ratio = (out_flux[i] > 0.0) ? (in_flux[i] / out_flux[i]) : in_flux[i];
+        double overload_score = (in_flux[i] * 1.5) + (in_deg[i] * 2.0) + (ratio * 1.0);
+        
+        heap_push(heap, i, g->nodes[i].name, g->nodes[i].dept, g->nodes[i].role, overload_score);
+    }
+
+    // 3. Extraire du Tas Binaire par ordre décroissant de risque
+    report.count = 0;
+    while (!is_heap_empty(heap) && report.count < MAX_MEMBERS) {
+        HeapItem item = heap_pop(heap);
+        int idx = report.count;
+
+        report.members[idx].node_id = item.node_id;
+        strncpy(report.members[idx].name, item.name, MAX_STR - 1);
+        strncpy(report.members[idx].dept, item.dept, MAX_STR - 1);
+        strncpy(report.members[idx].role, item.role, MAX_STR - 1);
+        report.members[idx].in_flux = in_flux[item.node_id];
+        report.members[idx].out_flux = out_flux[item.node_id];
+        report.members[idx].overload_score = item.score;
+        report.members[idx].is_critical = (item.score >= 12.0 || in_flux[item.node_id] >= 7.0);
+
+        report.count++;
+    }
+
+    free(in_flux);
+    free(out_flux);
+    free(in_deg);
+    free_max_heap(heap);
+
+    return report;
+}
+
+

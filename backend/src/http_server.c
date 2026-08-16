@@ -56,6 +56,18 @@ static void send_json_response(SOCKET client_fd, Graph* g) {
             (d < report.num_depts - 1) ? "," : "");
     }
 
+    offset += snprintf(response_body + offset, sizeof(response_body) - offset, "  ],\n  \"busFactor\": [\n");
+
+    BusFactorReport bf = calculate_bus_factor_and_overload(g);
+    for (int b = 0; b < bf.count; b++) {
+        BusFactorMember* bm = &bf.members[b];
+        offset += snprintf(response_body + offset, sizeof(response_body) - offset,
+            "    {\"nodeId\": %d, \"name\": \"%s\", \"dept\": \"%s\", \"role\": \"%s\", \"inFlux\": %.2f, \"outFlux\": %.2f, \"overloadScore\": %.1f, \"isCritical\": %s}%s\n",
+            bm->node_id, bm->name, bm->dept, bm->role, bm->in_flux, bm->out_flux, bm->overload_score,
+            bm->is_critical ? "true" : "false",
+            (b < bf.count - 1) ? "," : "");
+    }
+
     offset += snprintf(response_body + offset, sizeof(response_body) - offset, "  ]\n}\n");
 
     char full_response[10240];

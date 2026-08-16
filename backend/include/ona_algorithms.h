@@ -4,8 +4,28 @@
 #include "graph.h"
 #include "queue.h"
 #include "stack.h"
+#include "heap.h"
 
 #define MAX_DEPTS 16
+#define MAX_MEMBERS 64
+
+// Métriques de Surcharge et Bus Factor pour un employé
+typedef struct {
+    int node_id;
+    char name[MAX_STR];
+    char dept[MAX_STR];
+    char role[MAX_STR];
+    double in_flux;         // Volume total d'emails reçus
+    double out_flux;        // Volume total d'emails émis
+    double overload_score;  // Score calculé de surcharge cognitive
+    bool is_critical;       // true si Bus Factor élevé (goulot d'étranglement)
+} BusFactorMember;
+
+// Rapport global du Bus Factor (trié par Max-Heap)
+typedef struct {
+    BusFactorMember members[MAX_MEMBERS];
+    int count;
+} BusFactorReport;
 
 // Métriques d'un département
 typedef struct {
@@ -32,6 +52,9 @@ void calculate_betweenness(Graph* g);
 
 // Analyse des Silos Organisationnels & Score d'Isolation Inter-Départements
 SiloReport analyze_department_silos(Graph* g);
+
+// Détection du Bus Factor & Risque de Surcharge via Tas Binaire (Max-Heap)
+BusFactorReport calculate_bus_factor_and_overload(Graph* g);
 
 // Simulation de Propagation d'Information (Parcours BFS avec Queue)
 void simulate_propagation(Graph* g, int start_node_id, int max_steps);

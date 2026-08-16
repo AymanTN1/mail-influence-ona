@@ -48,7 +48,18 @@ int main(int argc, char* argv[]) {
                silos.depts[d].is_silo ? "⚠️ [SILO ALERT]" : "✅ [CONNECTÉ]");
     }
 
-    // 7. Démonstration des Simulations (Queue & Graph Traversal)
+    // 7. Détection du Bus Factor & Risque de Surcharge (Max-Heap C)
+    printf("\n⚠️ --- Détection du Bus Factor & Risque de Surcharge (Max-Heap C) ---\n");
+    BusFactorReport bf = calculate_bus_factor_and_overload(g);
+    for (int b = 0; b < bf.count; b++) {
+        printf("  - %-15s | %-12s | InFlux: %4.1f | OutFlux: %4.1f | Score: %5.1f %s\n",
+               bf.members[b].name, bf.members[b].dept,
+               bf.members[b].in_flux, bf.members[b].out_flux,
+               bf.members[b].overload_score,
+               bf.members[b].is_critical ? "🚨 [BUS FACTOR CRITIQUE]" : "🟢 [CHARGE NORMALE]");
+    }
+
+    // 8. Démonstration des Simulations (Queue & Graph Traversal)
     simulate_propagation(g, id_sarah, 3);
     simulate_resignation(g, id_sarah);
 
