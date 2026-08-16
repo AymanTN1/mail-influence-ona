@@ -37,7 +37,18 @@ int main(int argc, char* argv[]) {
                g->nodes[i].name, g->nodes[i].dept, g->nodes[i].page_rank, g->nodes[i].betweenness);
     }
 
-    // 6. Démonstration des Simulations (Queue & Graph Traversal)
+    // 6. Analyse des Silos Organisationnels (Cross-Department Isolation)
+    printf("\n🏢 --- Analyse des Silos Organisationnels (Homophily Score en C) ---\n");
+    SiloReport silos = analyze_department_silos(g);
+    for (int d = 0; d < silos.num_depts; d++) {
+        printf("  - %-12s (%d membres) | Interne: %4.1f | Externe: %4.1f | Isolation: %5.1f%% %s\n",
+               silos.depts[d].name, silos.depts[d].member_count,
+               silos.depts[d].internal_flux, silos.depts[d].external_flux,
+               silos.depts[d].isolation_score,
+               silos.depts[d].is_silo ? "⚠️ [SILO ALERT]" : "✅ [CONNECTÉ]");
+    }
+
+    // 7. Démonstration des Simulations (Queue & Graph Traversal)
     simulate_propagation(g, id_sarah, 3);
     simulate_resignation(g, id_sarah);
 

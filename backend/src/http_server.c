@@ -44,33 +44,37 @@ static void send_json_response(SOCKET client_fd, Graph* g) {
             (e < g->num_edges - 1) ? "," : "");
     }
 
+    offset += snprintf(response_body + offset, sizeof(response_body) - offset, "  ],\n  \"silos\": [\n");
+
+    SiloReport report = analyze_department_silos(g);
+    for (int d = 0; d < report.num_depts; d++) {
+        DeptMetrics* dm = &report.depts[d];
+        offset += snprintf(response_body + offset, sizeof(response_body) - offset,
+            "    {\"dept\": \"%s\", \"members\": %d, \"internalFlux\": %.2f, \"externalFlux\": %.2f, \"isolationScore\": %.1f, \"isSilo\": %s}%s\n",
+            dm->name, dm->member_count, dm->internal_flux, dm->external_flux, dm->isolation_score,
+            dm->is_silo ? "true" : "false",
+            (d < report.num_depts - 1) ? "," : "");
+    }
+
     offset += snprintf(response_body + offset, sizeof(response_body) - offset, "  ]\n}\n");
 
-    char header[1024];
-    snprintf(header, sizeof(header),
+    char full_response[10240];
+    int total_len = snprintf(full_response, sizeof(full_response),
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: application/json\r\n"
         "Access-Control-Allow-Origin: *\r\n"
         "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
         "Access-Control-Allow-Headers: Content-Type\r\n"
         "Content-Length: %d\r\n"
-        "Connection: close\r\n\r\n",
-        (int)strlen(response_body));
+        "Connection: close\r\n\r\n%s",
+        offset, response_body);
 
-#ifdef SIGPIPE
-    send(client_fd, header, strlen(header), MSG_NOSIGNAL);
-    send(client_fd, response_body, strlen(response_body), MSG_NOSIGNAL);
-#else
-    send(client_fd, header, strlen(header), 0);
-    send(client_fd, response_body, strlen(response_body), 0);
-#endif
+    send(client_fd, full_response, total_len, 0);
 }
 
 void start_http_server(Graph* g, int port) {
 #ifndef _WIN32
-#ifdef SIGPIPE
     signal(SIGPIPE, SIG_IGN);
-#endif
 #else
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -123,11 +127,7 @@ void start_http_server(Graph* g, int port) {
                     "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
                     "Access-Control-Allow-Headers: Content-Type\r\n"
                     "Connection: close\r\n\r\n";
-#ifdef SIGPIPE
-                send(client_fd, cors_response, strlen(cors_response), MSG_NOSIGNAL);
-#else
                 send(client_fd, cors_response, strlen(cors_response), 0);
-#endif
             } else {
                 send_json_response(client_fd, g);
             }

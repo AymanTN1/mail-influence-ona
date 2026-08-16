@@ -123,3 +123,71 @@ int simulate_resignation(Graph* g, int remove_node_id) {
     printf("⚠️  Arêtes rompues dans le réseau: %d liaisons emails perdues.\n", broken_edges);
     return broken_edges;
 }
+
+// Analyse des Silos Organisationnels & Score d'Isolation Inter-Départements
+SiloReport analyze_department_silos(Graph* g) {
+    SiloReport report;
+    memset(&report, 0, sizeof(SiloReport));
+
+    if (!g || g->num_nodes == 0) return report;
+
+    // 1. Identifier les départements uniques et compter les membres
+    for (int i = 0; i < g->num_nodes; i++) {
+        const char* dname = g->nodes[i].dept;
+        int found = -1;
+        for (int d = 0; d < report.num_depts; d++) {
+            if (strcmp(report.depts[d].name, dname) == 0) {
+                found = d;
+                break;
+            }
+        }
+        if (found == -1 && report.num_depts < MAX_DEPTS) {
+            found = report.num_depts;
+            strncpy(report.depts[found].name, dname, MAX_STR - 1);
+            report.depts[found].member_count = 0;
+            report.depts[found].internal_flux = 0.0;
+            report.depts[found].external_flux = 0.0;
+            report.num_depts++;
+        }
+        if (found != -1) {
+            report.depts[found].member_count++;
+        }
+    }
+
+    // 2. Construire la matrice d'échange et sommer les flux
+    for (int e = 0; e < g->num_edges; e++) {
+        int src_dept = -1;
+        int tgt_dept = -1;
+        for (int d = 0; d < report.num_depts; d++) {
+            if (strcmp(report.depts[d].name, g->nodes[g->edges[e].source].dept) == 0) src_dept = d;
+            if (strcmp(report.depts[d].name, g->nodes[g->edges[e].target].dept) == 0) tgt_dept = d;
+        }
+
+        if (src_dept != -1 && tgt_dept != -1) {
+            double w = g->edges[e].weight;
+            report.matrix[src_dept][tgt_dept] += w;
+
+            if (src_dept == tgt_dept) {
+                report.depts[src_dept].internal_flux += w;
+            } else {
+                report.depts[src_dept].external_flux += w;
+                report.depts[tgt_dept].external_flux += w;
+            }
+        }
+    }
+
+    // 3. Calculer le score d'isolation (Homophily Index %)
+    for (int d = 0; d < report.num_depts; d++) {
+        double total = report.depts[d].internal_flux + report.depts[d].external_flux;
+        if (total > 0.0) {
+            report.depts[d].isolation_score = (report.depts[d].internal_flux / total) * 100.0;
+        } else {
+            report.depts[d].isolation_score = 0.0;
+        }
+        // Un département est considéré comme un Silo si > 50% de ses flux restent internes
+        report.depts[d].is_silo = (report.depts[d].isolation_score >= 50.0);
+    }
+
+    return report;
+}
+

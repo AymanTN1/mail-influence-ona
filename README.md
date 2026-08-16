@@ -13,9 +13,10 @@ Le moteur backend a été conçu de zéro en C pur pour garantir une **complexit
 * **📬 File FIFO (`Queue`) :** Implémentation manuelle en C pour les parcours en largeur (BFS) et le simulateur de propagation d'information.
 * **📚 Pile LIFO (`Stack`) :** Implémentation en C pour les parcours en profondeur (DFS) et retour sur trace.
 * **🧠 Algorithmes Graphe ONA natifs :**
-  * **PageRank (Power Iteration en C) :** Identification des leaders informels et experts.
+  * **PageRank (Power Iteration en C) :** Identification des leaders informels et experts réels.
   * **Intermédiarité (Betweenness) :** Détection des goulots d'étranglement inter-équipes.
-  * **Simulateur de Propagation (BFS Queue) :** Diffusion d'une directive épidémique dans le réseau.
+  * **🏢 Détection des Silos Organisationnels (Homophily Index en C) :** Calcul de la matrice de flux inter-départements et détection automatique des départements isolés (Score d'isolation > 50%).
+  * **Simulateur de Propagation (BFS Queue) :** Diffusion d'une directive ou information dans le réseau.
   * **Simulateur d'Impact Démission ("What-If") :** Évaluation des liaisons email rompues (*Cut Vertices*).
 * **⚡ Mini-Serveur HTTP REST Sockets en C :** Sert l'API JSON directement au frontend React sur `http://localhost:8080/api/ona`.
 
@@ -24,7 +25,7 @@ Le moteur backend a été conçu de zéro en C pur pour garantir une **complexit
 ## 🛠️ Stack Technique
 
 * **Backend :** Langage C (C11), POSIX/WinSock Sockets, GCC / Make.
-* **Frontend :** React 18, Vite, CSS Tokens Modernes.
+* **Frontend :** React 18, Vite, SVG Graph Engine, CSS Tokens Modernes.
 * **DevOps :** Makefile, WSL / Linux / Windows compilation cross-plateforme.
 
 ---
