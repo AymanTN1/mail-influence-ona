@@ -240,44 +240,44 @@ export default function App() {
       depts.forEach((d, i) => {
         const angle = (i / depts.length) * 2 * Math.PI - Math.PI / 2;
         deptCenters[d] = {
-          x: cx + 185 * Math.cos(angle),
-          y: cy + 160 * Math.sin(angle)
+          x: cx + 195 * Math.cos(angle),
+          y: cy + 165 * Math.sin(angle)
         };
       });
       const deptCounters = {};
       currentData.nodes.forEach((node) => {
         const d = node.dept;
-        deptCounters[d] = (deptCounters[d] || 0);
+        const count = deptCounters[d] || 0;
+        deptCounters[d] = count + 1;
         const center = deptCenters[d];
-        const offsetAngle = deptCounters[d] * 1.4;
-        const dist = 38 * (deptCounters[d] + 1) * 0.55;
+        const subAngle = count * 1.8;
+        const dist = count === 0 ? 0 : 38;
         positions[node.id] = {
-          x: center.x + dist * Math.cos(offsetAngle),
-          y: center.y + dist * Math.sin(offsetAngle)
+          x: center.x + dist * Math.cos(subAngle),
+          y: center.y + dist * Math.sin(subAngle)
         };
-        deptCounters[d]++;
       });
     } else if (layoutMode === 'tribes') {
-      const commCount = communities.length || 3;
-      const commCenters = {};
-      for (let c = 0; c < commCount; c++) {
-        const angle = (c / commCount) * 2 * Math.PI - Math.PI / 2;
-        commCenters[c] = {
-          x: cx + 175 * Math.cos(angle),
-          y: cy + 150 * Math.sin(angle)
-        };
-      }
-      currentData.nodes.forEach((node, idx) => {
-        let commId = 0;
-        communities.forEach(c => {
-          if (c.memberIds?.includes(node.id)) commId = c.id;
+      const commCenters = [
+        { x: cx, y: cy - 135 },        // Tribu 1 (Sales & People) - Top center
+        { x: cx + 185, y: cy + 95 },   // Tribu 2 (Engineering & Tech) - Bottom right
+        { x: cx - 185, y: cy + 95 }    // Tribu 3 (Legal & Exec) - Bottom left
+      ];
+      const commCounters = {};
+      currentData.nodes.forEach((node) => {
+        let commIdx = 0;
+        communities.forEach((c, idx) => {
+          if (c.memberIds?.includes(node.id)) commIdx = idx;
         });
-        const center = commCenters[commId] || { x: cx, y: cy };
-        const angle = idx * 1.5;
-        const dist = 32 + (idx % 3) * 24;
+        const count = commCounters[commIdx] || 0;
+        commCounters[commIdx] = count + 1;
+        const totalInComm = communities[commIdx]?.memberCount || 5;
+        const center = commCenters[commIdx % commCenters.length];
+        const subAngle = (count / Math.max(1, totalInComm)) * 2 * Math.PI - Math.PI / 2;
+        const radiusDist = 55;
         positions[node.id] = {
-          x: center.x + dist * Math.cos(angle),
-          y: center.y + dist * Math.sin(angle)
+          x: center.x + radiusDist * Math.cos(subAngle),
+          y: center.y + radiusDist * Math.sin(subAngle)
         };
       });
     } else if (layoutMode === 'hierarchy') {
