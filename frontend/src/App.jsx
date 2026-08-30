@@ -146,7 +146,6 @@ export default function App() {
   const auditReport = currentData.auditReport || mockData.auditReport;
   const boundarySpanners = currentData.boundarySpanners || mockData.boundarySpanners;
   const communities = currentData.communities || mockData.communities;
-  const cascading = currentData.cascadingSimulation || mockData.cascadingSimulation;
   const temporal = currentData.temporalReport || mockData.temporalReport;
 
   const getBadgeClass = (dept) => {
@@ -255,6 +254,125 @@ export default function App() {
       .filter(n => n.name.toLowerCase().includes(q) || n.role.toLowerCase().includes(q) || n.dept.toLowerCase().includes(q))
       .map(n => n.id);
   }, [currentData.nodes, searchQuery]);
+
+  // Dynamic Real-time Tarjan SCC Crash Test Simulation in React
+  const cascading = useMemo(() => {
+    const nodes = currentData.nodes || [];
+    const edges = currentData.edges || [];
+    const resignedSet = new Set(customResignedNodes);
+
+    const activeNodes = nodes.filter(n => !resignedSet.has(n.id));
+    const activeNodeIds = new Set(activeNodes.map(n => n.id));
+
+    let brokenEdgesCount = 0;
+    let totalBrokenFlux = 0;
+    const remainingEdges = [];
+
+    edges.forEach(e => {
+      if (resignedSet.has(e.source) || resignedSet.has(e.target)) {
+        brokenEdgesCount++;
+        totalBrokenFlux += (e.weight || 1.0);
+      } else {
+        remainingEdges.push(e);
+      }
+    });
+
+    if (activeNodes.length === 0) {
+      return {
+        fragmentationIndex: 100.0,
+        riskLevel: 'CATASTROPHIQUE',
+        impactSummary: 'Effondrement total : 100% des collaborateurs ont été retirés du réseau.',
+        brokenEdgesCount,
+        totalComponents: 0,
+        resignedNodeIds: customResignedNodes,
+        components: []
+      };
+    }
+
+    // Tarjan SCC
+    const adj = new Map();
+    activeNodes.forEach(n => adj.set(n.id, []));
+    remainingEdges.forEach(e => {
+      if (adj.has(e.source) && activeNodeIds.has(e.target)) {
+        adj.get(e.source).push(e.target);
+      }
+    });
+
+    let index = 0;
+    const disc = new Map();
+    const low = new Map();
+    const onStack = new Set();
+    const stack = [];
+    const sccs = [];
+
+    function strongConnect(u) {
+      disc.set(u, index);
+      low.set(u, index);
+      index++;
+      stack.push(u);
+      onStack.add(u);
+
+      const neighbors = adj.get(u) || [];
+      for (const v of neighbors) {
+        if (!disc.has(v)) {
+          strongConnect(v);
+          low.set(u, Math.min(low.get(u), low.get(v)));
+        } else if (onStack.has(v)) {
+          low.set(u, Math.min(low.get(u), disc.get(v)));
+        }
+      }
+
+      if (low.get(u) === disc.get(u)) {
+        const component = [];
+        let w;
+        do {
+          w = stack.pop();
+          onStack.delete(w);
+          component.push(w);
+        } while (w !== u);
+        sccs.push(component);
+      }
+    }
+
+    for (const node of activeNodes) {
+      if (!disc.has(node.id)) {
+        strongConnect(node.id);
+      }
+    }
+
+    const totalComponents = sccs.length;
+    const maxSccSize = sccs.reduce((max, c) => Math.max(max, c.length), 0);
+    const fragmentationIndex = activeNodes.length > 0
+      ? (1.0 - (maxSccSize / activeNodes.length)) * 100.0
+      : 100.0;
+
+    let riskLevel = 'FAIBLE';
+    let impactSummary = '';
+
+    if (customResignedNodes.length === 0) {
+      riskLevel = 'OPTIMAL';
+      impactSummary = 'Réseau nominal : 100% des collaborateurs actifs, aucune rupture de flux.';
+    } else if (fragmentationIndex >= 50.0 || totalComponents >= 4) {
+      riskLevel = 'CRITIQUE';
+      impactSummary = `Scission sévère : ${brokenEdgesCount} flux rompus, réseau fragmenté en ${totalComponents} composantes isolées.`;
+    } else if (fragmentationIndex >= 15.0 || totalComponents > 1) {
+      riskLevel = 'MODÉRÉ';
+      impactSummary = `Perturbation modérée : ${brokenEdgesCount} flux rompus, scission en ${totalComponents} composantes.`;
+    } else {
+      riskLevel = 'FAIBLE';
+      impactSummary = `Réseau résilient : ${brokenEdgesCount} flux perdus, mais le réseau reste unifié en 1 composante connectée.`;
+    }
+
+    return {
+      fragmentationIndex,
+      riskLevel,
+      impactSummary,
+      brokenEdgesCount,
+      totalComponents,
+      resignedNodeIds: customResignedNodes,
+      components: sccs
+    };
+  }, [currentData.nodes, currentData.edges, customResignedNodes]);
 
   const toggleResignedNode = (nodeId) => {
     if (customResignedNodes.includes(nodeId)) {
@@ -492,12 +610,12 @@ export default function App() {
 
         {/* Tab 1: Crash Test (Tarjan SCC) */}
         {activeTab === 'crashtest' && cascading && (
-          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px', overflowY: 'auto' }}>
+          <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '330px', overflowY: 'auto' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%)',
               padding: '10px 12px',
               borderRadius: '8px',
-              border: `1px solid ${cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#ef4444' : '#f59e0b'}`
+              border: `1px solid ${cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#ef4444' : (cascading.riskLevel === 'MODÉRÉ' ? '#f59e0b' : '#10b981')}`
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -507,15 +625,15 @@ export default function App() {
                   fontSize: '0.62rem',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  background: '#7f1d1d',
-                  color: '#fca5a5',
+                  background: cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#7f1d1d' : (cascading.riskLevel === 'MODÉRÉ' ? '#78350f' : '#064e3b'),
+                  color: cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '#fca5a5' : (cascading.riskLevel === 'MODÉRÉ' ? '#fcd34d' : '#6ee7b7'),
                   fontWeight: 700
                 }}>
-                  🚨 {cascading.riskLevel}
+                  {cascading.riskLevel === 'CRITIQUE' || cascading.riskLevel === 'CATASTROPHIQUE' ? '🚨' : (cascading.riskLevel === 'MODÉRÉ' ? '⚠️' : '✅')} {cascading.riskLevel}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '4px' }}>
-                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f87171' }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: cascading.fragmentationIndex > 30 ? '#f87171' : (cascading.fragmentationIndex > 10 ? '#fbbf24' : '#34d399') }}>
                   {cascading.fragmentationIndex.toFixed(1)}%
                 </span>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -530,7 +648,7 @@ export default function App() {
             <div style={{ background: 'rgba(11, 15, 25, 0.8)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Départs Simulés:</span>
-                <strong style={{ color: '#ef4444' }}>{customResignedNodes.length} personnes</strong>
+                <strong style={{ color: customResignedNodes.length > 0 ? '#ef4444' : '#10b981' }}>{customResignedNodes.length} personnes</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Liaisons Emails Rompues:</span>
@@ -543,11 +661,29 @@ export default function App() {
             </div>
 
             <div style={{ background: 'rgba(17, 24, 39, 0.8)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fca5a5', display: 'block', marginBottom: '6px' }}>
-                Simuler le départ de collaborateurs :
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {currentData.nodes.slice(0, 7).map((node) => {
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#fca5a5' }}>
+                  Simuler le départ :
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    onClick={() => setCustomResignedNodes(busFactorList.slice(0, 3).map(b => b.nodeId))}
+                    style={{ fontSize: '0.6rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#fca5a5', cursor: 'pointer' }}
+                    title="Simuler départ du Top 3 Bus Factor"
+                  >
+                    🚨 Top 3
+                  </button>
+                  <button
+                    onClick={() => setCustomResignedNodes([])}
+                    style={{ fontSize: '0.6rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#bae6fd', cursor: 'pointer' }}
+                    title="Réinitialiser"
+                  >
+                    🔄 0
+                  </button>
+                </div>
+              </div>
+              <div className="custom-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '160px', overflowY: 'auto' }}>
+                {currentData.nodes.map((node) => {
                   const isResigned = customResignedNodes.includes(node.id);
                   return (
                     <div
@@ -558,16 +694,16 @@ export default function App() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         background: isResigned ? '#450a0a' : 'rgba(30, 41, 59, 0.7)',
-                        padding: '5px 8px',
+                        padding: '4px 8px',
                         borderRadius: '4px',
                         cursor: 'pointer',
                         border: isResigned ? '1px solid #ef4444' : '1px solid var(--border-subtle)'
                       }}
                     >
-                      <span style={{ fontSize: '0.72rem', color: isResigned ? '#fca5a5' : '#f3f4f6', textDecoration: isResigned ? 'line-through' : 'none' }}>
+                      <span style={{ fontSize: '0.7rem', color: isResigned ? '#fca5a5' : '#f3f4f6', textDecoration: isResigned ? 'line-through' : 'none' }}>
                         {node.name} ({node.dept})
                       </span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isResigned ? '#ef4444' : '#9ca3af' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 700, color: isResigned ? '#ef4444' : '#10b981' }}>
                         {isResigned ? '❌ DÉPART' : '🟢 ACTIF'}
                       </span>
                     </div>
@@ -1191,7 +1327,7 @@ export default function App() {
                   )}
 
                   {/* Warning pulse ring for critical Bus Factor */}
-                  {isCriticalBusFactor && !isResigned && activeTab !== 'velocity' && (
+                  {isCriticalBusFactor && !isResigned && (activeTab === 'overload' || activeTab === 'all' || !activeTab) && (
                     <circle
                       r={radius + 6}
                       fill="none"
@@ -1203,7 +1339,7 @@ export default function App() {
                   )}
 
                   {/* Purple aura ring for Key Boundary Spanners / Brokers */}
-                  {isKeyBridge && !isResigned && activeTab !== 'velocity' && (
+                  {isKeyBridge && !isResigned && (activeTab === 'bridges' || activeTab === 'all' || !activeTab) && (
                     <circle
                       r={radius + 9}
                       fill="none"
