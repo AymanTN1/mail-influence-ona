@@ -9,6 +9,24 @@ int main(int argc, char* argv[]) {
     printf("=====================================================\n");
 
     const char* dataset_path = "../mock-data/enterprise_emails_dataset.csv";
+    const char* env_path = getenv("DATASET_PATH");
+    if (env_path) {
+        dataset_path = env_path;
+    } else {
+        FILE* test_fp = fopen(dataset_path, "r");
+        if (!test_fp) {
+            if ((test_fp = fopen("mock-data/enterprise_emails_dataset.csv", "r"))) {
+                dataset_path = "mock-data/enterprise_emails_dataset.csv";
+                fclose(test_fp);
+            } else if ((test_fp = fopen("./enterprise_emails_dataset.csv", "r"))) {
+                dataset_path = "./enterprise_emails_dataset.csv";
+                fclose(test_fp);
+            }
+        } else {
+            fclose(test_fp);
+        }
+    }
+
     BenchmarkResult bench;
 
     // 1. Ingestion Haute Performance du fichier CSV & Indexation Hash Table O(1)
@@ -135,8 +153,14 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && strcmp(argv[1], "--cli") == 0) {
         printf("\n✅ Exécution terminée en mode CLI.\n");
     } else {
+        int port = 8080;
+        const char* env_port = getenv("PORT");
+        if (env_port) {
+            int p = atoi(env_port);
+            if (p > 0) port = p;
+        }
         // Démarre le serveur HTTP pour alimenter le frontend React
-        start_http_server(g, &bench, 8080);
+        start_http_server(g, &bench, port);
     }
 
     // Libération de la mémoire

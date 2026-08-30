@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: mailinfluence-ona-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt # ou oregon / ohio
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DATASET_PATH
+        value: /app/mock-data/enterprise_emails_dataset.csv
+    autoDeploy: true

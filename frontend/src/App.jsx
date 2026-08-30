@@ -121,8 +121,10 @@ export default function App() {
     }
   };
 
+  const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/ona';
+
   useEffect(() => {
-    fetch('http://localhost:8080/api/ona')
+    fetch(API_ENDPOINT)
       .then((res) => res.json())
       .then((json) => {
         setData(json);
@@ -135,7 +137,7 @@ export default function App() {
         setData(mockData);
         setBackendOnline(false);
       });
-  }, []);
+  }, [API_ENDPOINT]);
 
   const currentData = data || mockData;
   const silosList = currentData.silos || mockData.silos;
