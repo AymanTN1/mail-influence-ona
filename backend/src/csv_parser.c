@@ -104,12 +104,31 @@ Graph* ingest_csv_and_benchmark(const char* filepath, BenchmarkResult* bench) {
     memset(bench, 0, sizeof(BenchmarkResult));
 
     clock_t start_total = clock();
-    FILE* fp = fopen(filepath, "r");
-    if (!fp) {
-        // Générer le jeu de données automatiquement si absent
-        generate_enterprise_mock_dataset(filepath, 2500);
+    FILE* fp = NULL;
+    if (filepath && strstr(filepath, "://") == NULL) {
         fp = fopen(filepath, "r");
-        if (!fp) return NULL;
+    }
+    if (!fp) {
+        const char* fallbacks[] = {
+            "/app/mock-data/enterprise_emails_dataset.csv",
+            "mock-data/enterprise_emails_dataset.csv",
+            "../mock-data/enterprise_emails_dataset.csv",
+            "./enterprise_emails_dataset.csv",
+            "mock_emails_dataset.csv"
+        };
+        for (size_t i = 0; i < sizeof(fallbacks)/sizeof(fallbacks[0]); i++) {
+            fp = fopen(fallbacks[i], "r");
+            if (fp) {
+                filepath = fallbacks[i];
+                break;
+            }
+        }
+        if (!fp) {
+            filepath = "mock_emails_dataset.csv";
+            generate_enterprise_mock_dataset(filepath, 2500);
+            fp = fopen(filepath, "r");
+            if (!fp) return NULL;
+        }
     }
 
     Graph* g = create_graph();

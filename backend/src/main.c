@@ -8,19 +8,29 @@ int main(int argc, char* argv[]) {
     printf(" 🌐✉️ MailInfluence-ONA | High Performance C Engine\n");
     printf("=====================================================\n");
 
-    const char* dataset_path = "../mock-data/enterprise_emails_dataset.csv";
+    const char* default_dataset = "/app/mock-data/enterprise_emails_dataset.csv";
+    const char* dataset_path = default_dataset;
     const char* env_path = getenv("DATASET_PATH");
-    if (env_path) {
+
+    if (env_path && strstr(env_path, "://") == NULL && strlen(env_path) > 0) {
         dataset_path = env_path;
     } else {
+        if (env_path && strstr(env_path, "://") != NULL) {
+            printf("ℹ️ URL Cloud détectée (%s). Utilisation du dataset CSV pour le moteur de graphes.\n", env_path);
+        }
         FILE* test_fp = fopen(dataset_path, "r");
         if (!test_fp) {
             if ((test_fp = fopen("mock-data/enterprise_emails_dataset.csv", "r"))) {
                 dataset_path = "mock-data/enterprise_emails_dataset.csv";
                 fclose(test_fp);
+            } else if ((test_fp = fopen("../mock-data/enterprise_emails_dataset.csv", "r"))) {
+                dataset_path = "../mock-data/enterprise_emails_dataset.csv";
+                fclose(test_fp);
             } else if ((test_fp = fopen("./enterprise_emails_dataset.csv", "r"))) {
                 dataset_path = "./enterprise_emails_dataset.csv";
                 fclose(test_fp);
+            } else {
+                dataset_path = "mock_emails_dataset.csv";
             }
         } else {
             fclose(test_fp);
